@@ -29,7 +29,7 @@ export function YourLookGrid({ category }: YourLookGridProps) {
   const [dragActive, setDragActive] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>("")
-  const [selectedPoses, setSelectedPoses] = useState<string[]>([])
+  const [selectedPose, setSelectedPose] = useState<string>("")
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -108,11 +108,8 @@ export function YourLookGrid({ category }: YourLookGridProps) {
   }
 
   const handlePoseToggle = (poseId: string) => {
-    setSelectedPoses(prev => 
-      prev.includes(poseId) 
-        ? prev.filter(id => id !== poseId)
-        : [...prev, poseId]
-    )
+    // Toggle behavior: if same pose is clicked, deselect it; otherwise select the new pose
+    setSelectedPose(prev => prev === poseId ? "" : poseId)
   }
 
   const handleUpload = async () => {
@@ -138,7 +135,7 @@ export function YourLookGrid({ category }: YourLookGridProps) {
       const uploadedImageData = {
         url: data.url,
         file: selectedFile,
-        poses: selectedPoses,
+        poses: selectedPose ? [selectedPose] : [], // Convert single pose to array for backward compatibility
         timestamp: Date.now()
       }
       
@@ -151,14 +148,14 @@ export function YourLookGrid({ category }: YourLookGridProps) {
       }))
       
       toast.success("Image uploaded successfully! 🎉", {
-        description: `Ready for virtual try-on${selectedPoses.length > 0 ? ` with ${selectedPoses.join(', ')} poses` : ''}. Check the Virtual Try-On panel!`,
+        description: `Ready for virtual try-on${selectedPose ? ` with ${selectedPose} pose` : ''}. Check the Virtual Try-On panel!`,
         duration: 5000,
       })
       
       // Reset form
       setSelectedFile(null)
       setPreviewUrl("")
-      setSelectedPoses([])
+      setSelectedPose("")
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
@@ -177,7 +174,7 @@ export function YourLookGrid({ category }: YourLookGridProps) {
   const clearSelection = () => {
     setSelectedFile(null)
     setPreviewUrl("")
-    setSelectedPoses([])
+    setSelectedPose("")
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -297,25 +294,32 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                     <div className="text-left">
                       <h4 className="font-medium mb-3 flex items-center gap-2">
                         Select your pose (optional)
-                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                          {selectedPoses.length} selected
-                        </span>
+                        {selectedPose && (
+                          <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded-full border border-primary/20">
+                            {POSE_OPTIONS.find(p => p.id === selectedPose)?.label}
+                          </span>
+                        )}
                       </h4>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3">
                         {POSE_OPTIONS.map((pose) => (
-                          <div key={pose.id} className={`flex items-center space-x-2 p-2 rounded-lg border transition-all duration-200 cursor-pointer ${
-                            selectedPoses.includes(pose.id) 
-                              ? 'border-primary bg-primary/5 shadow-sm' 
-                              : 'border-muted hover:border-muted-foreground/50 hover:bg-muted/50'
-                          }`} onClick={() => handlePoseToggle(pose.id)}>
+                          <div 
+                            key={pose.id} 
+                            className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer min-h-[60px] ${
+                              selectedPose === pose.id 
+                                ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20' 
+                                : 'border-muted hover:border-muted-foreground/50 hover:bg-muted/50 active:bg-muted/70'
+                            }`} 
+                            onClick={() => handlePoseToggle(pose.id)}
+                          >
                             <Checkbox
                               id={pose.id}
-                              checked={selectedPoses.includes(pose.id)}
+                              checked={selectedPose === pose.id}
                               onCheckedChange={() => handlePoseToggle(pose.id)}
+                              className="scale-125"
                             />
                             <Label
                               htmlFor={pose.id}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              className="text-base font-medium leading-relaxed cursor-pointer flex-1"
                             >
                               {pose.label}
                             </Label>

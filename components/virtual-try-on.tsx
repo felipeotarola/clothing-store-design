@@ -78,26 +78,25 @@ export function VirtualTryOn() {
   const [isSharing, setIsSharing] = useState(false)
   const [showShareConfirm, setShowShareConfirm] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
-  const [selectedPoses, setSelectedPoses] = useState<string[]>([])
+  const [selectedPose, setSelectedPose] = useState<string>("")
   const [dragActive, setDragActive] = useState(false)
   const [isStylePromptCollapsed, setIsStylePromptCollapsed] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [prompt, setPrompt] = useState(
-    "Make the person wear the selected clothing items. Make the scene natural and well-lit.",
+    "Keep my face and body exactly the same. Only change my clothing to match the selected items. Make it look natural and realistic.",
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   globalSetSelectedProducts = setSelectedProducts
 
-  // Update prompt when poses change
+  // Update prompt when pose changes
   useEffect(() => {
-    if (selectedPoses.length > 0) {
-      const poseText = selectedPoses.join(', ')
-      setPrompt(`Make the person wear the selected clothing items while ${poseText}. Make the scene natural and well-lit.`)
+    if (selectedPose) {
+      setPrompt(`Keep my face and body exactly the same. Only change my clothing to match the selected items while ${selectedPose}. Make it look natural and realistic with proper lighting.`)
     } else {
-      setPrompt("Make the person wear the selected clothing items. Make the scene natural and well-lit.")
+      setPrompt("Keep my face and body exactly the same. Only change my clothing to match the selected items. Make it look natural and realistic.")
     }
-  }, [selectedPoses])
+  }, [selectedPose])
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -141,11 +140,8 @@ export function VirtualTryOn() {
   }
 
   const handlePoseToggle = (poseId: string) => {
-    setSelectedPoses(prev => 
-      prev.includes(poseId) 
-        ? prev.filter(id => id !== poseId)
-        : [...prev, poseId]
-    )
+    // Toggle behavior: if same pose is clicked, deselect it; otherwise select the new pose
+    setSelectedPose(prev => prev === poseId ? "" : poseId)
   }
 
   const handleShareClick = () => {
@@ -222,6 +218,15 @@ export function VirtualTryOn() {
   const handleTryOn = async () => {
     if (!selectedImage || selectedProducts.length === 0) return
 
+    // Limit to maximum 4 items to prevent API overload
+    if (selectedProducts.length > 4) {
+      toast.error("Too many items selected", {
+        description: "Please select a maximum of 4 items for best results. The AI works better with fewer items.",
+        duration: 5000,
+      })
+      return
+    }
+
     setIsProcessing(true)
     
     // Show processing toast
@@ -231,17 +236,35 @@ export function VirtualTryOn() {
     })
     
     try {
-      // Convert all clothing images to base64
+      console.log("Starting virtual try-on with:", {
+        userImageSize: selectedImage.size,
+        selectedItemsCount: selectedProducts.length,
+        itemNames: selectedProducts.map(p => p.name)
+      })
+
+      // Convert all clothing images to blobs with error handling
       const clothingImages = await Promise.all(
-        selectedProducts.map(async (product) => {
+        selectedProducts.map(async (product, index) => {
+          console.log(`Fetching clothing image ${index + 1}/${selectedProducts.length}: ${product.name}`)
           const response = await fetch(product.image)
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image for ${product.name}`)
+          }
           const blob = await response.blob()
+          console.log(`Clothing image ${index + 1} size: ${blob.size} bytes`)
           return { blob, name: product.name }
         })
       )
 
       const formData = new FormData()
+      
+      // Verify user image is valid
+      if (!selectedImage || selectedImage.size === 0) {
+        throw new Error("Invalid user image")
+      }
+      
       formData.append("userImage", selectedImage)
+      console.log("Added user image to FormData:", selectedImage.size, "bytes")
       
       // Add all clothing images
       clothingImages.forEach((item, index) => {
@@ -252,16 +275,29 @@ export function VirtualTryOn() {
       formData.append("productNames", selectedProducts.map(p => p.name).join(", "))
       formData.append("productCount", selectedProducts.length.toString())
 
+      console.log("FormData contents:", {
+        userImage: !!formData.get("userImage"),
+        prompt: formData.get("prompt"),
+        productNames: formData.get("productNames"),
+        productCount: formData.get("productCount"),
+        clothingImagesCount: clothingImages.length
+      })
+
+      console.log("Sending request to API...")
       const response = await fetch("/api/virtual-try-on", {
         method: "POST",
         body: formData,
       })
 
       if (!response.ok) {
-        throw new Error("Failed to process image")
+        const errorText = await response.text()
+        console.error("API error response:", response.status, errorText)
+        throw new Error(`API Error: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
+      console.log("API response received:", data)
+      
       setResult({
         url: data.output,
         prompt: prompt,
@@ -275,7 +311,7 @@ export function VirtualTryOn() {
     } catch (error) {
       console.error("Error processing image:", error)
       toast.error("Failed to process image", {
-        description: "Please try again with a different photo or clothing selection.",
+        description: error instanceof Error ? error.message : "Please try again with a different photo or clothing selection.",
         duration: 5000,
       })
     } finally {
@@ -417,28 +453,29 @@ export function VirtualTryOn() {
               <div className="space-y-3">
                 <div className="text-left">
                   <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                    Select poses (optional)
-                    {selectedPoses.length > 0 && (
-                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                        {selectedPoses.length}
+                    Select pose (optional)
+                    {selectedPose && (
+                      <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded-full border border-primary/20">
+                        {POSE_OPTIONS.find(p => p.id === selectedPose)?.label}
                       </span>
                     )}
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
                     {POSE_OPTIONS.map((pose) => (
-                      <div key={pose.id} className={`flex items-center space-x-2 p-1.5 rounded-md border transition-all duration-200 cursor-pointer ${
-                        selectedPoses.includes(pose.id) 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-muted hover:border-muted-foreground/50 hover:bg-muted/50'
+                      <div key={pose.id} className={`flex items-center space-x-2 p-3 rounded-md border-2 transition-all duration-200 cursor-pointer min-h-[50px] ${
+                        selectedPose === pose.id 
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
+                          : 'border-muted hover:border-muted-foreground/50 hover:bg-muted/50 active:bg-muted/70'
                       }`} onClick={() => handlePoseToggle(pose.id)}>
                         <Checkbox
                           id={pose.id}
-                          checked={selectedPoses.includes(pose.id)}
+                          checked={selectedPose === pose.id}
                           onCheckedChange={() => handlePoseToggle(pose.id)}
+                          className="scale-110"
                         />
                         <Label
                           htmlFor={pose.id}
-                          className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          className="text-sm font-medium leading-relaxed cursor-pointer flex-1"
                         >
                           {pose.label}
                         </Label>
@@ -562,7 +599,7 @@ export function VirtualTryOn() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Your Virtual Try-On</CardTitle>
-            <CardDescription className="text-xs">See how you look in Felipe's Banana fashion!</CardDescription>
+            <CardDescription className="text-xs">See how you look in your selected fashion items!</CardDescription>
           </CardHeader>
           <CardContent>
             {result ? (
@@ -575,7 +612,7 @@ export function VirtualTryOn() {
                         <img
                           src={result.url || "/placeholder.svg"}
                           alt="Virtual try-on result"
-                          className="w-full h-40 object-cover rounded-lg border hover:opacity-90 transition-opacity"
+                          className="w-full h-80 object-cover rounded-lg border hover:opacity-90 transition-opacity"
                         />
                         {/* Expand button - always visible */}
                         <Button
@@ -641,12 +678,61 @@ export function VirtualTryOn() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-40 border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                <div className="text-center">
-                  <Camera className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-                  <p className="text-muted-foreground text-xs">
-                    {!selectedImage ? "Upload a photo" : selectedProducts.length === 0 ? "Select clothing" : "Ready to try on!"}
-                  </p>
+              <div className="flex items-center justify-center h-80 border-2 border-dashed border-muted-foreground/25 rounded-lg bg-gradient-to-br from-muted/10 to-muted/5">
+                <div className="text-center space-y-4">
+                  {/* Pose silhouette */}
+                  <div className="relative mx-auto w-24 h-32">
+                    <svg 
+                      viewBox="0 0 24 32" 
+                      className="w-full h-full text-muted-foreground/30"
+                      fill="currentColor"
+                    >
+                      {/* Simple human silhouette pose */}
+                      <ellipse cx="12" cy="4" rx="3" ry="3"/> {/* Head */}
+                      <rect x="10" y="7" width="4" height="8" rx="2"/> {/* Torso */}
+                      <rect x="8" y="9" width="3" height="6" rx="1.5" transform="rotate(-20 9.5 12)"/> {/* Left arm */}
+                      <rect x="13" y="9" width="3" height="6" rx="1.5" transform="rotate(20 14.5 12)"/> {/* Right arm */}
+                      <rect x="9" y="15" width="2.5" height="10" rx="1.25"/> {/* Left leg */}
+                      <rect x="12.5" y="15" width="2.5" height="10" rx="1.25"/> {/* Right leg */}
+                      <circle cx="8.5" cy="25.5" r="1.5"/> {/* Left foot */}
+                      <circle cx="15.5" cy="25.5" r="1.5"/> {/* Right foot */}
+                    </svg>
+                    
+                    {/* Sparkle effects around the pose */}
+                    <div className="absolute -top-2 -left-2 w-3 h-3 text-primary/40">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2z"/>
+                      </svg>
+                    </div>
+                    <div className="absolute -top-1 right-0 w-2 h-2 text-primary/30">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2z"/>
+                      </svg>
+                    </div>
+                    <div className="absolute bottom-2 -right-2 w-3 h-3 text-primary/40">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <p className="font-medium text-muted-foreground">
+                      Your virtual try-on will appear here
+                    </p>
+                    <p className="text-xs text-muted-foreground/70">
+                      {!selectedImage ? "📸 Upload a photo to get started" : 
+                       selectedProducts.length === 0 ? "👕 Select clothing items" : 
+                       "✨ Ready to see your new look!"}
+                    </p>
+                  </div>
+                  
+                  {/* Progress indicators */}
+                  <div className="flex justify-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full transition-colors ${selectedImage ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                    <div className={`w-2 h-2 rounded-full transition-colors ${selectedProducts.length > 0 ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                    <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+                  </div>
                 </div>
               </div>
             )}
