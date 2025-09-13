@@ -9,8 +9,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export interface SharedLook {
   id: string
   image_url: string
-  prompt: string
+  user_image_url?: string
+  prompt?: string
   product_names: string
+  selected_items?: any[]
   created_at: string
   updated_at: string
 }

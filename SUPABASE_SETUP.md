@@ -13,8 +13,10 @@ Run this SQL in your Supabase SQL editor:
 CREATE TABLE shared_looks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   image_url TEXT NOT NULL,
+  user_image_url TEXT,
   prompt TEXT,
   product_names TEXT NOT NULL,
+  selected_items JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -45,6 +47,10 @@ $$ language 'plpgsql';
 -- Create a trigger to automatically update the updated_at column
 CREATE TRIGGER update_shared_looks_updated_at BEFORE UPDATE ON shared_looks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- If you already created the table without these new columns, run this migration:
+-- ALTER TABLE shared_looks ADD COLUMN user_image_url TEXT;
+-- ALTER TABLE shared_looks ADD COLUMN selected_items JSONB;
 ```
 
 ## Environment Variables

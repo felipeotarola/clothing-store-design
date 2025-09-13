@@ -67,6 +67,7 @@ export function VirtualTryOn() {
   const [selectedProducts, setSelectedProducts] = useState<Product[]>(globalSelectedProducts)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
+  const [showShareConfirm, setShowShareConfirm] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
   const [prompt, setPrompt] = useState(
     "Make the person wear the selected clothing items. Make the scene natural and well-lit.",
@@ -84,10 +85,15 @@ export function VirtualTryOn() {
     }
   }
 
-  const handleShareLook = async () => {
+  const handleShareClick = () => {
+    setShowShareConfirm(true)
+  }
+
+  const handleConfirmShare = async () => {
     if (!result) return
 
     setIsSharing(true)
+    setShowShareConfirm(false)
     try {
       const response = await fetch("/api/shared-looks", {
         method: "POST",
@@ -96,8 +102,10 @@ export function VirtualTryOn() {
         },
         body: JSON.stringify({
           image_url: result.url,
+          user_image_url: previewUrl, // Include the original user image
           prompt: result.prompt,
           product_names: selectedProducts.map(p => p.name).join(", "),
+          selected_items: selectedProducts, // Include the full product data
         }),
       })
 
@@ -116,6 +124,10 @@ export function VirtualTryOn() {
     } finally {
       setIsSharing(false)
     }
+  }
+
+  const handleCancelShare = () => {
+    setShowShareConfirm(false)
   }
 
   const handleTryOn = async () => {
@@ -359,7 +371,7 @@ export function VirtualTryOn() {
                     variant="default"
                     size="sm"
                     className="flex-1 text-xs"
-                    onClick={handleShareLook}
+                    onClick={handleShareClick}
                     disabled={isSharing}
                   >
                     {isSharing ? (
@@ -389,6 +401,97 @@ export function VirtualTryOn() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Share Confirmation Dialog */}
+      <Dialog open={showShareConfirm} onOpenChange={setShowShareConfirm}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Share Your Look?</DialogTitle>
+            <DialogDescription>
+              Your look will be shared publicly in the "Your Look" section for everyone to see and get inspired by.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {result && (
+            <div className="space-y-4">
+              {/* What will be shared preview */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">What will be shared:</h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Original Photo */}
+                  {previewUrl && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground font-medium">Your Original Photo</p>
+                      <img
+                        src={previewUrl}
+                        alt="Your original photo"
+                        className="w-full aspect-[3/4] object-cover rounded-lg border"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Try-on Result */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Virtual Try-On Result</p>
+                    <img
+                      src={result.url || "/placeholder.svg"}
+                      alt="Virtual try-on result"
+                      className="w-full aspect-[3/4] object-cover rounded-lg border"
+                    />
+                  </div>
+                </div>
+                
+                {/* Selected Items */}
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium">Selected Items</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProducts.map((product, index) => (
+                      <div key={index} className="flex items-center gap-2 bg-muted rounded-lg p-2">
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-8 h-8 object-cover rounded"
+                        />
+                        <div className="text-xs">
+                          <p className="font-medium">{product.name}</p>
+                          <p className="text-muted-foreground">${product.price}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancelShare}
+              disabled={isSharing}
+            >
+              No, Cancel
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleConfirmShare}
+              disabled={isSharing}
+            >
+              {isSharing ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Sharing...
+                </>
+              ) : (
+                "Yes, Share"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
