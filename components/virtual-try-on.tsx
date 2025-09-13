@@ -23,28 +23,48 @@ interface TryOnResult {
   prompt: string
 }
 
-let globalSelectedProduct: Product | null = null
-let globalSetSelectedProduct: ((product: Product | null) => void) | null = null
+let globalSelectedProducts: Product[] = []
+let globalSetSelectedProducts: ((products: Product[]) => void) | null = null
 
-export function setGlobalSelectedProduct(product: Product) {
-  globalSelectedProduct = product
-  if (globalSetSelectedProduct) {
-    globalSetSelectedProduct(product)
+export function toggleGlobalSelectedProduct(product: Product) {
+  const existingIndex = globalSelectedProducts.findIndex(p => p.id === product.id)
+  
+  if (existingIndex >= 0) {
+    // Remove product if already selected
+    globalSelectedProducts = globalSelectedProducts.filter(p => p.id !== product.id)
+  } else {
+    // Add product if not selected
+    globalSelectedProducts = [...globalSelectedProducts, product]
   }
+  
+  if (globalSetSelectedProducts) {
+    globalSetSelectedProducts(globalSelectedProducts)
+  }
+}
+
+export function removeGlobalSelectedProduct(productId: string) {
+  globalSelectedProducts = globalSelectedProducts.filter(p => p.id !== productId)
+  if (globalSetSelectedProducts) {
+    globalSetSelectedProducts(globalSelectedProducts)
+  }
+}
+
+export function isProductSelected(productId: string): boolean {
+  return globalSelectedProducts.some(p => p.id === productId)
 }
 
 export function VirtualTryOn() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>("")
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(globalSelectedProduct)
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>(globalSelectedProducts)
   const [isProcessing, setIsProcessing] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
   const [prompt, setPrompt] = useState(
-    "Make the person wear the selected clothing item. Make the scene natural and well-lit.",
+    "Make the person wear the selected clothing items. Make the scene natural and well-lit.",
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  globalSetSelectedProduct = setSelectedProduct
+  globalSetSelectedProducts = setSelectedProducts
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -56,19 +76,30 @@ export function VirtualTryOn() {
   }
 
   const handleTryOn = async () => {
-    if (!selectedImage || !selectedProduct) return
+    if (!selectedImage || selectedProducts.length === 0) return
 
     setIsProcessing(true)
     try {
-      // Convert clothing image to base64
-      const clothingImageResponse = await fetch(selectedProduct.image)
-      const clothingImageBlob = await clothingImageResponse.blob()
+      // Convert all clothing images to base64
+      const clothingImages = await Promise.all(
+        selectedProducts.map(async (product) => {
+          const response = await fetch(product.image)
+          const blob = await response.blob()
+          return { blob, name: product.name }
+        })
+      )
 
       const formData = new FormData()
       formData.append("userImage", selectedImage)
-      formData.append("clothingImage", clothingImageBlob, `${selectedProduct.name}.jpg`)
+      
+      // Add all clothing images
+      clothingImages.forEach((item, index) => {
+        formData.append(`clothingImage_${index}`, item.blob, `${item.name}.jpg`)
+      })
+      
       formData.append("prompt", prompt)
-      formData.append("productName", selectedProduct.name)
+      formData.append("productNames", selectedProducts.map(p => p.name).join(", "))
+      formData.append("productCount", selectedProducts.length.toString())
 
       const response = await fetch("/api/virtual-try-on", {
         method: "POST",
@@ -154,40 +185,57 @@ export function VirtualTryOn() {
           </CardContent>
         </Card>
 
-        {/* Selected Item Section */}
+        {/* Selected Items Section */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Selected Item</CardTitle>
+            <CardTitle className="text-lg">Selected Items ({selectedProducts.length})</CardTitle>
             <CardDescription className="text-xs">Ready to try on?</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {selectedProduct ? (
+            {selectedProducts.length > 0 ? (
               <div className="space-y-3">
-                <img
-                  src={selectedProduct.image || "/placeholder.svg"}
-                  alt={selectedProduct.name}
-                  className="w-full h-32 object-cover rounded-lg border"
-                />
-                <div className="text-center">
-                  <h3 className="font-semibold text-sm">{selectedProduct.name}</h3>
-                  <p className="text-lg font-bold text-primary">${selectedProduct.price}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{selectedProduct.category}</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setSelectedProduct(null)} className="w-full text-xs">
-                  Clear Selection
+                {selectedProducts.map((product) => (
+                  <div key={product.id} className="flex items-center space-x-3 p-2 border rounded-lg">
+                    <img
+                      src={product.image || "/placeholder.svg"}
+                      alt={product.name}
+                      className="w-16 h-16 object-cover rounded-md border"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-xs truncate">{product.name}</h4>
+                      <p className="text-sm font-bold text-primary">${product.price}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{product.category}</p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => removeGlobalSelectedProduct(product.id)}
+                      className="text-xs px-2"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setSelectedProducts([])} 
+                  className="w-full text-xs"
+                >
+                  Clear All
                 </Button>
               </div>
             ) : (
               <div className="flex items-center justify-center h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg">
                 <p className="text-muted-foreground text-xs text-center px-2">
-                  Select an item from the categories to preview
+                  Select items from the categories to preview
                 </p>
               </div>
             )}
 
             <Button
               onClick={handleTryOn}
-              disabled={!selectedImage || !selectedProduct || isProcessing}
+              disabled={!selectedImage || selectedProducts.length === 0 || isProcessing}
               className="w-full"
               size="sm"
             >
@@ -235,9 +283,7 @@ export function VirtualTryOn() {
                     <Download className="mr-1 h-3 w-3" />
                     Download
                   </Button>
-                  <Button size="sm" className="flex-1 text-xs">
-                    Add to Cart
-                  </Button>
+
                 </div>
               </div>
             ) : (
@@ -245,7 +291,7 @@ export function VirtualTryOn() {
                 <div className="text-center">
                   <Camera className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
                   <p className="text-muted-foreground text-xs">
-                    {!selectedImage ? "Upload a photo" : !selectedProduct ? "Select clothing" : "Ready to try on!"}
+                    {!selectedImage ? "Upload a photo" : selectedProducts.length === 0 ? "Select clothing" : "Ready to try on!"}
                   </p>
                 </div>
               </div>

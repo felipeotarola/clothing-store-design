@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { setGlobalSelectedProduct } from "./virtual-try-on"
+import { toggleGlobalSelectedProduct, isProductSelected } from "./virtual-try-on"
 
 interface Product {
   id: string
@@ -219,7 +219,7 @@ export function ProductGrid({ category }: ProductGridProps) {
   const filteredProducts = category ? products.filter((product) => product.category === category) : products
 
   const handleProductSelect = (product: Product) => {
-    setGlobalSelectedProduct(product)
+    toggleGlobalSelectedProduct(product)
     document.getElementById("try-on")?.scrollIntoView({ behavior: "smooth" })
   }
 
@@ -239,8 +239,13 @@ export function ProductGrid({ category }: ProductGridProps) {
               <h3 className="font-medium text-sm tracking-wide uppercase">{product.name}</h3>
               <p className="text-lg font-semibold">${product.price}</p>
               <div className="flex gap-2 mt-3">
-                <Button variant="default" size="sm" className="flex-1" onClick={() => handleProductSelect(product)}>
-                  TRY ON
+                <Button 
+                  variant={isProductSelected(product.id) ? "secondary" : "default"} 
+                  size="sm" 
+                  className="flex-1" 
+                  onClick={() => handleProductSelect(product)}
+                >
+                  {isProductSelected(product.id) ? "REMOVE" : "TRY ON"}
                 </Button>
                 <Button
                   variant="outline"
