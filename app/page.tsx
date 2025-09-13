@@ -8,9 +8,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <Header />
-      <main>
-        <HeroSection />
-        <VirtualTryOn />
+      <HeroSection />
+      <main className="pr-96">
         <CategorySection id="pants" title="PANTS" category="pants" />
         <CategorySection id="shirts" title="SHIRTS" category="shirts" />
         <CategorySection id="jackets" title="JACKETS" category="jackets" />
@@ -22,6 +21,7 @@ export default function HomePage() {
         <CategorySection id="sportswear" title="SPORTSWEAR" category="sportswear" />
       </main>
       <Footer />
+      <VirtualTryOn />
     </div>
   )
 }

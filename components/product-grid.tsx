@@ -1,5 +1,8 @@
+"use client"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { setGlobalSelectedProduct } from "./virtual-try-on"
 
 interface Product {
   id: string
@@ -215,6 +218,11 @@ interface ProductGridProps {
 export function ProductGrid({ category }: ProductGridProps) {
   const filteredProducts = category ? products.filter((product) => product.category === category) : products
 
+  const handleProductSelect = (product: Product) => {
+    setGlobalSelectedProduct(product)
+    document.getElementById("try-on")?.scrollIntoView({ behavior: "smooth" })
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {filteredProducts.map((product) => (
@@ -230,13 +238,18 @@ export function ProductGrid({ category }: ProductGridProps) {
             <div className="p-4 space-y-2">
               <h3 className="font-medium text-sm tracking-wide uppercase">{product.name}</h3>
               <p className="text-lg font-semibold">${product.price}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mt-3 border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
-              >
-                ADD TO CART
-              </Button>
+              <div className="flex gap-2 mt-3">
+                <Button variant="default" size="sm" className="flex-1" onClick={() => handleProductSelect(product)}>
+                  TRY ON
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
+                >
+                  ADD TO CART
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

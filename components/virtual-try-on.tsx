@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, Camera, Loader2, Download, Check } from "lucide-react"
+import { Upload, Camera, Loader2, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -18,220 +18,33 @@ interface Product {
   image: string
 }
 
-const products: Product[] = [
-  {
-    id: "1",
-    name: "Essential Straight Pants",
-    price: 189,
-    category: "pants",
-    image: "/minimalist-straight-pants-grayscale.jpg",
-  },
-  {
-    id: "2",
-    name: "Classic White Shirt",
-    price: 129,
-    category: "shirts",
-    image: "/classic-white-button-shirt-minimalist.jpg",
-  },
-  {
-    id: "3",
-    name: "Tailored Blazer",
-    price: 349,
-    category: "jackets",
-    image: "/tailored-blazer-jacket-grayscale-minimalist.jpg",
-  },
-  {
-    id: "4",
-    name: "Wool Beanie",
-    price: 59,
-    category: "hats",
-    image: "/wool-beanie-hat-minimalist-grayscale.jpg",
-  },
-  {
-    id: "5",
-    name: "Wide Leg Trousers",
-    price: 219,
-    category: "pants",
-    image: "/wide-leg-trousers-pants-grayscale.jpg",
-  },
-  {
-    id: "6",
-    name: "Oversized Tee",
-    price: 89,
-    category: "shirts",
-    image: "/oversized-t-shirt-minimalist-grayscale.jpg",
-  },
-  {
-    id: "7",
-    name: "Wool Coat",
-    price: 459,
-    category: "jackets",
-    image: "/wool-coat-jacket-minimalist-grayscale.jpg",
-  },
-  {
-    id: "8",
-    name: "Baseball Cap",
-    price: 79,
-    category: "hats",
-    image: "/baseball-cap-hat-minimalist-grayscale.jpg",
-  },
-  {
-    id: "9",
-    name: "Minimalist Leather Tote",
-    price: 299,
-    category: "bags",
-    image: "/minimalist-leather-tote-bag-grayscale.jpg",
-  },
-  {
-    id: "10",
-    name: "Canvas Crossbody Bag",
-    price: 149,
-    category: "bags",
-    image: "/canvas-crossbody-bag-minimalist-grayscale.jpg",
-  },
-  {
-    id: "11",
-    name: "Structured Handbag",
-    price: 399,
-    category: "bags",
-    image: "/structured-handbag-minimalist-grayscale.jpg",
-  },
-  {
-    id: "12",
-    name: "Mini Clutch",
-    price: 199,
-    category: "bags",
-    image: "/mini-clutch-bag-minimalist-grayscale.jpg",
-  },
-  {
-    id: "13",
-    name: "Silver Chain Necklace",
-    price: 129,
-    category: "jewelry",
-    image: "/silver-chain-necklace-minimalist-grayscale.jpg",
-  },
-  {
-    id: "14",
-    name: "Geometric Earrings",
-    price: 89,
-    category: "jewelry",
-    image: "/geometric-earrings-minimalist-grayscale.jpg",
-  },
-  {
-    id: "15",
-    name: "Minimalist Ring Set",
-    price: 159,
-    category: "jewelry",
-    image: "/minimalist-ring-set-grayscale.jpg",
-  },
-  {
-    id: "16",
-    name: "Classic Watch",
-    price: 349,
-    category: "jewelry",
-    image: "/classic-minimalist-watch-grayscale.jpg",
-  },
-  {
-    id: "17",
-    name: "Canvas Backpack",
-    price: 179,
-    category: "backpacks",
-    image: "/canvas-backpack-minimalist-grayscale.jpg",
-  },
-  {
-    id: "18",
-    name: "Leather Backpack",
-    price: 449,
-    category: "backpacks",
-    image: "/leather-backpack-minimalist-grayscale.jpg",
-  },
-  {
-    id: "19",
-    name: "Tech Backpack",
-    price: 299,
-    category: "backpacks",
-    image: "/tech-backpack-minimalist-grayscale.jpg",
-  },
-  {
-    id: "20",
-    name: "Mini Backpack",
-    price: 129,
-    category: "backpacks",
-    image: "/mini-backpack-minimalist-grayscale.jpg",
-  },
-  {
-    id: "21",
-    name: "Classic White Sneakers",
-    price: 189,
-    category: "sneakers",
-    image: "/classic-white-sneakers-minimalist-grayscale.jpg",
-  },
-  {
-    id: "22",
-    name: "High-Top Sneakers",
-    price: 219,
-    category: "sneakers",
-    image: "/high-top-sneakers-minimalist-grayscale.jpg",
-  },
-  {
-    id: "23",
-    name: "Running Shoes",
-    price: 249,
-    category: "sneakers",
-    image: "/running-shoes-minimalist-grayscale.jpg",
-  },
-  {
-    id: "24",
-    name: "Slip-On Sneakers",
-    price: 159,
-    category: "sneakers",
-    image: "/slip-on-sneakers-minimalist-grayscale.jpg",
-  },
-  {
-    id: "25",
-    name: "Athletic Hoodie",
-    price: 149,
-    category: "sportswear",
-    image: "/athletic-hoodie-minimalist-grayscale.jpg",
-  },
-  {
-    id: "26",
-    name: "Performance Leggings",
-    price: 89,
-    category: "sportswear",
-    image: "/performance-leggings-minimalist-grayscale.jpg",
-  },
-  {
-    id: "27",
-    name: "Training Shorts",
-    price: 69,
-    category: "sportswear",
-    image: "/training-shorts-minimalist-grayscale.jpg",
-  },
-  {
-    id: "28",
-    name: "Sports Bra",
-    price: 59,
-    category: "sportswear",
-    image: "/sports-bra-minimalist-grayscale.jpg",
-  },
-]
-
 interface TryOnResult {
   url: string
   prompt: string
 }
 
+let globalSelectedProduct: Product | null = null
+let globalSetSelectedProduct: ((product: Product | null) => void) | null = null
+
+export function setGlobalSelectedProduct(product: Product) {
+  globalSelectedProduct = product
+  if (globalSetSelectedProduct) {
+    globalSetSelectedProduct(product)
+  }
+}
+
 export function VirtualTryOn() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>("")
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(globalSelectedProduct)
   const [isProcessing, setIsProcessing] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
   const [prompt, setPrompt] = useState(
     "Make the person wear the selected clothing item. Make the scene natural and well-lit.",
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  globalSetSelectedProduct = setSelectedProduct
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -280,159 +93,166 @@ export function VirtualTryOn() {
   }
 
   return (
-    <section id="try-on" className="py-16 bg-muted/30">
-      <div className="container px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight mb-4">VIRTUAL TRY-ON</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Upload your photo, select clothes, and see how they look on you using AI magic! 🍌✨
+    <div
+      className="fixed right-0 w-96 bg-background border-l border-border z-50 overflow-y-auto"
+      style={{ top: "4rem", height: "calc(100vh - 4rem)" }}
+    >
+      <div className="p-6 space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold tracking-tight mb-2">VIRTUAL TRY-ON</h2>
+          <p className="text-muted-foreground text-sm">
+            Upload your photo and select clothes to see how they look on you! 🍌✨
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {/* Upload Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Upload Your Photo
-              </CardTitle>
-              <CardDescription>Choose a clear photo of yourself</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="image-upload">Select Image</Label>
-                <Input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  ref={fileInputRef}
-                  className="cursor-pointer"
+        {/* Upload Photo Section */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Camera className="h-4 w-4" />
+              Upload Your Photo
+            </CardTitle>
+            <CardDescription className="text-xs">Choose a clear photo of yourself</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="image-upload" className="text-sm">
+                Select Image
+              </Label>
+              <Input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                ref={fileInputRef}
+                className="cursor-pointer text-xs"
+              />
+            </div>
+
+            {previewUrl && (
+              <div className="relative">
+                <img
+                  src={previewUrl || "/placeholder.svg"}
+                  alt="Preview"
+                  className="w-full h-32 object-cover rounded-lg border"
                 />
               </div>
+            )}
 
-              {previewUrl && (
-                <div className="relative">
-                  <img
-                    src={previewUrl || "/placeholder.svg"}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded-lg border"
-                  />
-                </div>
-              )}
+            <div className="space-y-2">
+              <Label htmlFor="prompt" className="text-sm">
+                Style Prompt
+              </Label>
+              <Textarea
+                id="prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe how you want to style the outfit..."
+                className="min-h-16 text-xs"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="prompt">Style Prompt</Label>
-                <Textarea
-                  id="prompt"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe how you want to style the outfit..."
-                  className="min-h-20"
+        {/* Selected Item Section */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Selected Item</CardTitle>
+            <CardDescription className="text-xs">Ready to try on?</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {selectedProduct ? (
+              <div className="space-y-3">
+                <img
+                  src={selectedProduct.image || "/placeholder.svg"}
+                  alt={selectedProduct.name}
+                  className="w-full h-32 object-cover rounded-lg border"
                 />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Clothing</CardTitle>
-              <CardDescription>Choose an item to try on</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-                {products.map((product) => (
-                  <div
-                    key={product.id}
-                    className={`relative cursor-pointer border-2 rounded-lg p-2 transition-all ${
-                      selectedProduct?.id === product.id
-                        ? "border-primary bg-primary/5"
-                        : "border-muted hover:border-primary/50"
-                    }`}
-                    onClick={() => setSelectedProduct(product)}
-                  >
-                    <img
-                      src={product.image || "/placeholder.svg"}
-                      alt={product.name}
-                      className="w-full h-24 object-cover rounded"
-                    />
-                    <p className="text-xs font-medium mt-1 text-center">{product.name}</p>
-                    <p className="text-xs text-muted-foreground text-center">${product.price}</p>
-                    {selectedProduct?.id === product.id && (
-                      <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                        <Check className="h-3 w-3" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <Button
-                onClick={handleTryOn}
-                disabled={!selectedImage || !selectedProduct || isProcessing}
-                className="w-full mt-4"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing Magic...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Try On Clothes
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Result Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Virtual Try-On</CardTitle>
-              <CardDescription>See how you look in Felipe's Banana fashion!</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {result ? (
-                <div className="space-y-4">
-                  <img
-                    src={result.url || "/placeholder.svg"}
-                    alt="Virtual try-on result"
-                    className="w-full h-64 object-cover rounded-lg border"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 bg-transparent"
-                      onClick={() => {
-                        const link = document.createElement("a")
-                        link.href = result.url
-                        link.download = "felipe-banana-tryout.jpg"
-                        link.click()
-                      }}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
-                    <Button className="flex-1">Add to Cart</Button>
-                  </div>
+                <div className="text-center">
+                  <h3 className="font-semibold text-sm">{selectedProduct.name}</h3>
+                  <p className="text-lg font-bold text-primary">${selectedProduct.price}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{selectedProduct.category}</p>
                 </div>
+                <Button variant="outline" size="sm" onClick={() => setSelectedProduct(null)} className="w-full text-xs">
+                  Clear Selection
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                <p className="text-muted-foreground text-xs text-center px-2">
+                  Select an item from the categories to preview
+                </p>
+              </div>
+            )}
+
+            <Button
+              onClick={handleTryOn}
+              disabled={!selectedImage || !selectedProduct || isProcessing}
+              className="w-full"
+              size="sm"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Processing...
+                </>
               ) : (
-                <div className="flex items-center justify-center h-64 border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                  <div className="text-center">
-                    <Camera className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground text-sm">
-                      {!selectedImage ? "Upload a photo" : !selectedProduct ? "Select clothing" : "Ready to try on!"}
-                    </p>
-                  </div>
-                </div>
+                <>
+                  <Upload className="mr-2 h-3 w-3" />
+                  Try On Clothes
+                </>
               )}
-            </CardContent>
-          </Card>
-        </div>
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Result Section */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Your Virtual Try-On</CardTitle>
+            <CardDescription className="text-xs">See how you look in Felipe's Banana fashion!</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {result ? (
+              <div className="space-y-3">
+                <img
+                  src={result.url || "/placeholder.svg"}
+                  alt="Virtual try-on result"
+                  className="w-full h-40 object-cover rounded-lg border"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 bg-transparent text-xs"
+                    onClick={() => {
+                      const link = document.createElement("a")
+                      link.href = result.url
+                      link.download = "felipe-banana-tryout.jpg"
+                      link.click()
+                    }}
+                  >
+                    <Download className="mr-1 h-3 w-3" />
+                    Download
+                  </Button>
+                  <Button size="sm" className="flex-1 text-xs">
+                    Add to Cart
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-40 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                <div className="text-center">
+                  <Camera className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+                  <p className="text-muted-foreground text-xs">
+                    {!selectedImage ? "Upload a photo" : !selectedProduct ? "Select clothing" : "Ready to try on!"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-    </section>
+    </div>
   )
 }
