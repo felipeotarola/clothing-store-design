@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import type { React } from "react"
 
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,7 @@ import { Upload, Camera, Loader2, Download, Check } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Product {
   id: string
@@ -16,6 +17,22 @@ interface Product {
   price: number
   category: string
   image: string
+}
+
+const clothingTypes = {
+  shirts: { label: "Shirt/Top", pose: "standing upright with arms slightly away from body", placement: "upper body" },
+  pants: {
+    label: "Pants/Trousers",
+    pose: "standing with legs slightly apart",
+    placement: "lower body from waist down",
+  },
+  jackets: { label: "Jacket/Blazer", pose: "standing upright with good posture", placement: "over upper body" },
+  hats: { label: "Hat/Cap", pose: "facing forward with head visible", placement: "on head" },
+  sports: {
+    label: "Athletic Wear",
+    pose: "athletic stance appropriate for the sport",
+    placement: "full body or specific body part",
+  },
 }
 
 const products: Product[] = [
@@ -128,12 +145,22 @@ export function VirtualTryOn() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [clothingTypeOverride, setClothingTypeOverride] = useState<string>("auto-detect")
   const [isProcessing, setIsProcessing] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
-  const [prompt, setPrompt] = useState(
-    "Make the person wear the selected clothing item. Make the scene natural and well-lit.",
-  )
+  const [prompt, setPrompt] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const generateSmartPrompt = () => {
+    if (!selectedProduct) return ""
+
+    const clothingType = clothingTypeOverride || selectedProduct.category
+    const typeInfo = clothingTypes[clothingType as keyof typeof clothingTypes]
+
+    if (!typeInfo) return `Make the person wear the ${selectedProduct.name}. Ensure natural lighting and realistic fit.`
+
+    return `Make the person wear the ${selectedProduct.name} specifically on their ${typeInfo.placement}. The person should be ${typeInfo.pose}. Ensure the ${clothingType} fits naturally and realistically on the correct body part. Do not confuse this ${clothingType} with other clothing types. Maintain natural lighting and realistic proportions.`
+  }
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -158,6 +185,7 @@ export function VirtualTryOn() {
       formData.append("clothingImage", clothingImageBlob, `${selectedProduct.name}.jpg`)
       formData.append("prompt", prompt)
       formData.append("productName", selectedProduct.name)
+      formData.append("clothingType", clothingTypeOverride || selectedProduct.category)
 
       const response = await fetch("/api/virtual-try-on", {
         method: "POST",
@@ -225,14 +253,33 @@ export function VirtualTryOn() {
               )}
 
               <div className="space-y-2">
+                <Label htmlFor="clothing-type">Clothing Type (Optional Override)</Label>
+                <Select value={clothingTypeOverride} onValueChange={setClothingTypeOverride}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Auto-detect from selected item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto-detect">Auto-detect</SelectItem>
+                    {Object.entries(clothingTypes).map(([key, type]) => (
+                      <SelectItem key={key} value={key}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Override if the AI misidentifies your clothing type</p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="prompt">Style Prompt</Label>
                 <Textarea
                   id="prompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe how you want to style the outfit..."
+                  placeholder="AI-generated prompt will appear here..."
                   className="min-h-20"
                 />
+                <p className="text-xs text-muted-foreground">Smart prompt generated automatically. Edit if needed.</p>
               </div>
             </CardContent>
           </Card>
@@ -261,6 +308,7 @@ export function VirtualTryOn() {
                     />
                     <p className="text-xs font-medium mt-1 text-center">{product.name}</p>
                     <p className="text-xs text-muted-foreground text-center">${product.price}</p>
+                    <p className="text-xs text-primary text-center capitalize">{product.category}</p>
                     {selectedProduct?.id === product.id && (
                       <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
                         <Check className="h-3 w-3" />
