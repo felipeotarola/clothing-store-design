@@ -19,10 +19,27 @@ export function HeroSection() {
           Where fashion meets fun! Try on clothes virtually with our AI magic
         </p>
         <div className="flex gap-4 justify-center">
-          <Button size="lg" className="mt-8 px-8 py-3 text-base">
+          <Button
+            size="lg"
+            className="mt-8 px-8 py-3 text-base"
+            style={{
+              backgroundColor: "#000000",
+              color: "#ffffff",
+              border: "none",
+            }}
+          >
             EXPLORE COLLECTION
           </Button>
-          <Button size="lg" variant="outline" className="mt-8 px-8 py-3 text-base bg-transparent">
+          <Button
+            size="lg"
+            variant="outline"
+            className="mt-8 px-8 py-3 text-base bg-transparent"
+            style={{
+              backgroundColor: "#ffffff",
+              color: "#000000",
+              border: "2px solid #000000",
+            }}
+          >
             TRY ON NOW
           </Button>
         </div>
