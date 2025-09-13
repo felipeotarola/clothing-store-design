@@ -40,6 +40,13 @@ const clothingTypes = {
   },
 }
 
+const poseOptions = {
+  standing: "standing upright with good posture",
+  sitting: "sitting comfortably with good posture",
+  walking: "walking naturally with confident stride",
+  posing: "striking a fashionable pose for the camera",
+}
+
 const products: Product[] = [
   {
     id: "1",
@@ -172,6 +179,7 @@ export function VirtualTryOn() {
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([])
   const [clothingTypeOverride, setClothingTypeOverride] = useState<string>("auto-detect")
+  const [selectedPoses, setSelectedPoses] = useState<string[]>(["standing"])
   const [isProcessing, setIsProcessing] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
   const [prompt, setPrompt] = useState("")
@@ -180,14 +188,20 @@ export function VirtualTryOn() {
   const generateSmartPrompt = () => {
     if (selectedProducts.length === 0) return ""
 
+    const poseDescription =
+      selectedPoses.length > 0
+        ? selectedPoses.map((pose) => poseOptions[pose as keyof typeof poseOptions]).join(" or ")
+        : "standing upright with good posture"
+
     if (selectedProducts.length === 1) {
       const product = selectedProducts[0]
       const clothingType = clothingTypeOverride || product.category
       const typeInfo = clothingTypes[clothingType as keyof typeof clothingTypes]
 
-      if (!typeInfo) return `Make the person wear the ${product.name}. Ensure natural lighting and realistic fit.`
+      if (!typeInfo)
+        return `Make the person wear the ${product.name}. The person should be ${poseDescription}. Ensure natural lighting and realistic fit.`
 
-      return `Make the person wear the ${product.name} specifically on their ${typeInfo.placement}. The person should be ${typeInfo.pose}. Ensure the ${clothingType} fits naturally and realistically on the correct body part. Do not confuse this ${clothingType} with other clothing types. Maintain natural lighting and realistic proportions.`
+      return `Make the person wear the ${product.name} specifically on their ${typeInfo.placement}. The person should be ${poseDescription}. Ensure the ${clothingType} fits naturally and realistically on the correct body part. Do not confuse this ${clothingType} with other clothing types. Maintain natural lighting and realistic proportions.`
     }
 
     // Multiple products - create complete outfit
@@ -198,7 +212,7 @@ export function VirtualTryOn() {
       })
       .join(", ")
 
-    return `Create a complete stylish outfit with: ${outfitItems}. The person should be standing with good posture showing the full outfit. Ensure all clothing items fit naturally and complement each other. Maintain natural lighting and realistic proportions for a cohesive look.`
+    return `Create a complete stylish outfit with: ${outfitItems}. The person should be ${poseDescription}. Ensure all clothing items fit naturally and complement each other. Maintain natural lighting and realistic proportions for a cohesive look.`
   }
 
   const toggleProductSelection = (product: Product) => {
@@ -266,6 +280,17 @@ export function VirtualTryOn() {
     }
   }
 
+  const togglePoseSelection = (pose: string) => {
+    setSelectedPoses((prev) => {
+      const isSelected = prev.includes(pose)
+      if (isSelected) {
+        return prev.filter((p) => p !== pose)
+      } else {
+        return [...prev, pose]
+      }
+    })
+  }
+
   return (
     <section id="try-on" className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -326,6 +351,33 @@ export function VirtualTryOn() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">Override if the AI misidentifies your clothing type</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pose Selection</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(poseOptions).map(([key, description]) => (
+                    <div
+                      key={key}
+                      className={`flex items-center space-x-2 p-2 rounded border cursor-pointer transition-colors ${
+                        selectedPoses.includes(key)
+                          ? "border-primary bg-gray-100 text-gray-900"
+                          : "border-muted hover:border-primary/50 bg-white text-gray-700"
+                      }`}
+                      onClick={() => togglePoseSelection(key)}
+                    >
+                      <div
+                        className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
+                          selectedPoses.includes(key) ? "border-primary bg-primary" : "border-muted"
+                        }`}
+                      >
+                        {selectedPoses.includes(key) && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </div>
+                      <span className="text-sm capitalize font-medium">{key}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Select one or more poses for variety</p>
               </div>
 
               <div className="space-y-2">
