@@ -634,11 +634,24 @@ export function VirtualTryOn() {
                     variant="outline"
                     size="sm"
                     className="flex-1 bg-transparent text-xs"
-                    onClick={() => {
-                      const link = document.createElement("a")
-                      link.href = result.url
-                      link.download = "felipe-banana-tryout.jpg"
-                      link.click()
+                    onClick={async () => {
+                      if (result) {
+                        try {
+                          const response = await fetch(result.url)
+                          const blob = await response.blob()
+                          const url = window.URL.createObjectURL(blob)
+                          const link = document.createElement("a")
+                          link.href = url
+                          link.download = "felipe-banana-tryout.jpg"
+                          document.body.appendChild(link)
+                          link.click()
+                          document.body.removeChild(link)
+                          window.URL.revokeObjectURL(url)
+                        } catch (error) {
+                          console.error('Download failed:', error)
+                          toast.error("Download failed", { description: "Please try again" })
+                        }
+                      }
                     }}
                   >
                     <Download className="mr-1 h-3 w-3" />
@@ -829,12 +842,23 @@ export function VirtualTryOn() {
               <Button 
                 variant="outline" 
                 className="flex-1"
-                onClick={() => {
+                onClick={async () => {
                   if (result) {
-                    const link = document.createElement("a")
-                    link.href = result.url
-                    link.download = "virtual-try-on-result.jpg"
-                    link.click()
+                    try {
+                      const response = await fetch(result.url)
+                      const blob = await response.blob()
+                      const url = window.URL.createObjectURL(blob)
+                      const link = document.createElement("a")
+                      link.href = url
+                      link.download = "virtual-try-on-result.jpg"
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                      window.URL.revokeObjectURL(url)
+                    } catch (error) {
+                      console.error('Download failed:', error)
+                      toast.error("Download failed", { description: "Please try again" })
+                    }
                   }
                 }}
               >
@@ -845,11 +869,22 @@ export function VirtualTryOn() {
                 <Button 
                   variant="outline" 
                   className="flex-1"
-                  onClick={() => {
-                    const link = document.createElement("a")
-                    link.href = previewUrl
-                    link.download = "original-photo.jpg"
-                    link.click()
+                  onClick={async () => {
+                    if (selectedImage) {
+                      try {
+                        const url = URL.createObjectURL(selectedImage)
+                        const link = document.createElement("a")
+                        link.href = url
+                        link.download = selectedImage.name || "original-photo.jpg"
+                        document.body.appendChild(link)
+                        link.click()
+                        document.body.removeChild(link)
+                        URL.revokeObjectURL(url)
+                      } catch (error) {
+                        console.error('Download failed:', error)
+                        toast.error("Download failed", { description: "Please try again" })
+                      }
+                    }
                   }}
                 >
                   <Download className="mr-2 h-4 w-4" />
