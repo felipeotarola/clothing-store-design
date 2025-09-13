@@ -183,6 +183,7 @@ export function VirtualTryOn() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
   const [prompt, setPrompt] = useState("")
+  const [isImageExpanded, setIsImageExpanded] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const generateSmartPrompt = () => {
@@ -488,11 +489,16 @@ export function VirtualTryOn() {
             <CardContent>
               {result ? (
                 <div className="space-y-4">
-                  <img
-                    src={result.url || "/placeholder.svg"}
-                    alt="Virtual try-on result"
-                    className="w-full h-64 object-cover rounded-lg border"
-                  />
+                  <div className="relative cursor-pointer" onClick={() => setIsImageExpanded(true)}>
+                    <img
+                      src={result.url || "/placeholder.svg"}
+                      alt="Virtual try-on result"
+                      className="w-full h-64 object-cover rounded-lg border hover:opacity-90 transition-opacity"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/20 rounded-lg">
+                      <div className="bg-white/90 px-3 py-1 rounded-full text-sm font-medium">Click to expand</div>
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -527,6 +533,47 @@ export function VirtualTryOn() {
             </CardContent>
           </Card>
         </div>
+
+        {isImageExpanded && result && (
+          <div
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            onClick={() => setIsImageExpanded(false)}
+          >
+            <div className="relative max-w-4xl max-h-full">
+              <button
+                onClick={() => setIsImageExpanded(false)}
+                className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+              >
+                <X className="h-8 w-8" />
+              </button>
+              <img
+                src={result.url || "/placeholder.svg"}
+                alt="Virtual try-on result - expanded view"
+                className="max-w-full max-h-[90vh] object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div className="absolute bottom-4 left-4 right-4 flex gap-2">
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const link = document.createElement("a")
+                    link.href = result.url
+                    link.download = "felipe-banana-tryout.jpg"
+                    link.click()
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
+                </Button>
+                <Button className="flex-1" onClick={(e) => e.stopPropagation()}>
+                  Add to Cart
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )
