@@ -15,6 +15,7 @@ export default function HomePage() {
         <CategorySection id="shirts" title="SHIRTS" category="shirts" />
         <CategorySection id="jackets" title="JACKETS" category="jackets" />
         <CategorySection id="hats" title="HATS" category="hats" />
+        <CategorySection id="sports" title="SPORTSWEAR" category="sports" />
       </main>
       <Footer />
     </div>

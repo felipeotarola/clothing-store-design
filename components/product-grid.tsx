@@ -66,6 +66,48 @@ const products: Product[] = [
     category: "hats",
     image: "/baseball-cap-hat-minimalist-grayscale.jpg",
   },
+  {
+    id: "9",
+    name: "Performance Running Shorts",
+    price: 79,
+    category: "sports",
+    image: "/performance-running-shorts-athletic.jpg",
+  },
+  {
+    id: "10",
+    name: "Athletic Tank Top",
+    price: 59,
+    category: "sports",
+    image: "/athletic-tank-top-sportswear.jpg",
+  },
+  {
+    id: "11",
+    name: "Training Hoodie",
+    price: 149,
+    category: "sports",
+    image: "/training-hoodie-athletic-wear.jpg",
+  },
+  {
+    id: "12",
+    name: "Sport Leggings",
+    price: 89,
+    category: "sports",
+    image: "/sport-leggings-athletic-wear.jpg",
+  },
+  {
+    id: "13",
+    name: "Basketball Jersey",
+    price: 99,
+    category: "sports",
+    image: "/basketball-jersey-sportswear.jpg",
+  },
+  {
+    id: "14",
+    name: "Compression Shirt",
+    price: 69,
+    category: "sports",
+    image: "/compression-shirt-athletic.jpg",
+  },
 ]
 
 interface ProductGridProps {
