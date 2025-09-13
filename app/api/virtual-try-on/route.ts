@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const clothingImage = formData.get("clothingImage") as File
     const prompt = formData.get("prompt") as string
     const productName = formData.get("productName") as string
+    const clothingType = formData.get("clothingType") as string // Added clothing type parameter for better AI understanding
 
     if (!userImage || !clothingImage) {
       return NextResponse.json({ error: "Both user image and clothing image are required" }, { status: 400 })
@@ -37,9 +38,13 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Sending to Replicate with both images as base64")
 
+    const enhancedPrompt =
+      prompt ||
+      `Make the person wear the ${productName} (${clothingType}). Ensure the ${clothingType} is placed correctly on the appropriate body part. Do not confuse ${clothingType} with other clothing types. Make the scene natural and well-lit with realistic fit and proportions.`
+
     const output = await replicate.run("google/nano-banana", {
       input: {
-        prompt: prompt || `Make the person wear the ${productName}. Make the scene natural and well-lit.`,
+        prompt: enhancedPrompt,
         image_input: [base64UserImage, base64ClothingImage],
         output_format: "jpg",
       },
