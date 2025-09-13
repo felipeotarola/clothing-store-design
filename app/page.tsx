@@ -15,7 +15,11 @@ export default function HomePage() {
         <CategorySection id="shirts" title="SHIRTS" category="shirts" />
         <CategorySection id="jackets" title="JACKETS" category="jackets" />
         <CategorySection id="hats" title="HATS" category="hats" />
-        <CategorySection id="sports" title="SPORTSWEAR" category="sports" />
+        <CategorySection id="bags" title="BAGS" category="bags" />
+        <CategorySection id="jewelry" title="JEWELRY" category="jewelry" />
+        <CategorySection id="backpacks" title="BACKPACKS" category="backpacks" />
+        <CategorySection id="sneakers" title="SNEAKERS" category="sneakers" />
+        <CategorySection id="sportswear" title="SPORTSWEAR" category="sportswear" />
       </main>
       <Footer />
     </div>

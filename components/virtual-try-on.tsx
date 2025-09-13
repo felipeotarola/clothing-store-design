@@ -1,15 +1,14 @@
 "use client"
 
-import type { React } from "react"
+import type React from "react"
 
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, Camera, Loader2, Download, Check, X } from "lucide-react"
+import { Upload, Camera, Loader2, Download, Check } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Product {
   id: string
@@ -17,34 +16,6 @@ interface Product {
   price: number
   category: string
   image: string
-}
-
-const clothingTypes = {
-  shirts: { label: "Shirt/Top", pose: "standing upright with arms slightly away from body", placement: "upper body" },
-  pants: {
-    label: "Pants/Trousers",
-    pose: "standing with legs slightly apart",
-    placement: "lower body from waist down",
-  },
-  jackets: { label: "Jacket/Blazer", pose: "standing upright with good posture", placement: "over upper body" },
-  hats: { label: "Hat/Cap", pose: "facing forward with head visible", placement: "on head" },
-  sports: {
-    label: "Athletic Wear",
-    pose: "athletic stance appropriate for the sport",
-    placement: "full body or specific body part",
-  },
-  shoes: {
-    label: "Shoes/Footwear",
-    pose: "standing with feet visible and slightly apart",
-    placement: "on feet",
-  },
-}
-
-const poseOptions = {
-  standing: "standing upright with good posture",
-  sitting: "sitting comfortably with good posture",
-  walking: "walking naturally with confident stride",
-  posing: "striking a fashionable pose for the camera",
 }
 
 const products: Product[] = [
@@ -106,66 +77,143 @@ const products: Product[] = [
   },
   {
     id: "9",
-    name: "Performance Running Shorts",
-    price: 79,
-    category: "sports",
-    image: "/performance-running-shorts-athletic.jpg",
+    name: "Minimalist Leather Tote",
+    price: 299,
+    category: "bags",
+    image: "/minimalist-leather-tote-bag-grayscale.jpg",
   },
   {
     id: "10",
-    name: "Athletic Tank Top",
-    price: 59,
-    category: "sports",
-    image: "/athletic-tank-top-sportswear.jpg",
+    name: "Canvas Crossbody Bag",
+    price: 149,
+    category: "bags",
+    image: "/canvas-crossbody-bag-minimalist-grayscale.jpg",
   },
   {
     id: "11",
-    name: "Training Hoodie",
-    price: 149,
-    category: "sports",
-    image: "/training-hoodie-athletic-wear.jpg",
+    name: "Structured Handbag",
+    price: 399,
+    category: "bags",
+    image: "/structured-handbag-minimalist-grayscale.jpg",
   },
   {
     id: "12",
-    name: "Sport Leggings",
-    price: 89,
-    category: "sports",
-    image: "/sport-leggings-athletic-wear.jpg",
+    name: "Mini Clutch",
+    price: 199,
+    category: "bags",
+    image: "/mini-clutch-bag-minimalist-grayscale.jpg",
   },
   {
     id: "13",
-    name: "Basketball Jersey",
-    price: 99,
-    category: "sports",
-    image: "/basketball-jersey-sportswear.jpg",
+    name: "Silver Chain Necklace",
+    price: 129,
+    category: "jewelry",
+    image: "/silver-chain-necklace-minimalist-grayscale.jpg",
   },
   {
     id: "14",
-    name: "Compression Shirt",
-    price: 69,
-    category: "sports",
-    image: "/compression-shirt-athletic.jpg",
+    name: "Geometric Earrings",
+    price: 89,
+    category: "jewelry",
+    image: "/geometric-earrings-minimalist-grayscale.jpg",
   },
   {
     id: "15",
-    name: "Classic Oxford Shoes",
-    price: 299,
-    category: "shoes",
-    image: "/classic-oxford-shoes-leather.jpg",
+    name: "Minimalist Ring Set",
+    price: 159,
+    category: "jewelry",
+    image: "/minimalist-ring-set-grayscale.jpg",
   },
   {
     id: "16",
-    name: "White Sneakers",
-    price: 159,
-    category: "shoes",
-    image: "/white-sneakers-minimalist.jpg",
+    name: "Classic Watch",
+    price: 349,
+    category: "jewelry",
+    image: "/classic-minimalist-watch-grayscale.jpg",
   },
   {
     id: "17",
-    name: "Running Shoes",
+    name: "Canvas Backpack",
+    price: 179,
+    category: "backpacks",
+    image: "/canvas-backpack-minimalist-grayscale.jpg",
+  },
+  {
+    id: "18",
+    name: "Leather Backpack",
+    price: 449,
+    category: "backpacks",
+    image: "/leather-backpack-minimalist-grayscale.jpg",
+  },
+  {
+    id: "19",
+    name: "Tech Backpack",
+    price: 299,
+    category: "backpacks",
+    image: "/tech-backpack-minimalist-grayscale.jpg",
+  },
+  {
+    id: "20",
+    name: "Mini Backpack",
+    price: 129,
+    category: "backpacks",
+    image: "/mini-backpack-minimalist-grayscale.jpg",
+  },
+  {
+    id: "21",
+    name: "Classic White Sneakers",
     price: 189,
-    category: "shoes",
-    image: "/running-shoes-athletic.jpg",
+    category: "sneakers",
+    image: "/classic-white-sneakers-minimalist-grayscale.jpg",
+  },
+  {
+    id: "22",
+    name: "High-Top Sneakers",
+    price: 219,
+    category: "sneakers",
+    image: "/high-top-sneakers-minimalist-grayscale.jpg",
+  },
+  {
+    id: "23",
+    name: "Running Shoes",
+    price: 249,
+    category: "sneakers",
+    image: "/running-shoes-minimalist-grayscale.jpg",
+  },
+  {
+    id: "24",
+    name: "Slip-On Sneakers",
+    price: 159,
+    category: "sneakers",
+    image: "/slip-on-sneakers-minimalist-grayscale.jpg",
+  },
+  {
+    id: "25",
+    name: "Athletic Hoodie",
+    price: 149,
+    category: "sportswear",
+    image: "/athletic-hoodie-minimalist-grayscale.jpg",
+  },
+  {
+    id: "26",
+    name: "Performance Leggings",
+    price: 89,
+    category: "sportswear",
+    image: "/performance-leggings-minimalist-grayscale.jpg",
+  },
+  {
+    id: "27",
+    name: "Training Shorts",
+    price: 69,
+    category: "sportswear",
+    image: "/training-shorts-minimalist-grayscale.jpg",
+  },
+  {
+    id: "28",
+    name: "Sports Bra",
+    price: 59,
+    category: "sportswear",
+    image: "/sports-bra-minimalist-grayscale.jpg",
   },
 ]
 
@@ -177,59 +225,13 @@ interface TryOnResult {
 export function VirtualTryOn() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>("")
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([])
-  const [clothingTypeOverride, setClothingTypeOverride] = useState<string>("auto-detect")
-  const [selectedPoses, setSelectedPoses] = useState<string[]>(["standing"])
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
-  const [prompt, setPrompt] = useState("")
-  const [isImageExpanded, setIsImageExpanded] = useState(false)
+  const [prompt, setPrompt] = useState(
+    "Make the person wear the selected clothing item. Make the scene natural and well-lit.",
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const generateSmartPrompt = () => {
-    if (selectedProducts.length === 0) return ""
-
-    const poseDescription =
-      selectedPoses.length > 0
-        ? selectedPoses.map((pose) => poseOptions[pose as keyof typeof poseOptions]).join(" or ")
-        : "standing upright with good posture"
-
-    if (selectedProducts.length === 1) {
-      const product = selectedProducts[0]
-      const clothingType = clothingTypeOverride || product.category
-      const typeInfo = clothingTypes[clothingType as keyof typeof clothingTypes]
-
-      if (!typeInfo)
-        return `Make the person wear the ${product.name}. The person should be ${poseDescription}. Ensure natural lighting and realistic fit.`
-
-      return `Make the person wear the ${product.name} specifically on their ${typeInfo.placement}. The person should be ${poseDescription}. Ensure the ${clothingType} fits naturally and realistically on the correct body part. Do not confuse this ${clothingType} with other clothing types. Maintain natural lighting and realistic proportions.`
-    }
-
-    // Multiple products - create complete outfit
-    const outfitItems = selectedProducts
-      .map((product) => {
-        const typeInfo = clothingTypes[product.category as keyof typeof clothingTypes]
-        return `${product.name} on ${typeInfo?.placement || "appropriate body part"}`
-      })
-      .join(", ")
-
-    return `Create a complete stylish outfit with: ${outfitItems}. The person should be ${poseDescription}. Ensure all clothing items fit naturally and complement each other. Maintain natural lighting and realistic proportions for a cohesive look.`
-  }
-
-  const toggleProductSelection = (product: Product) => {
-    setSelectedProducts((prev) => {
-      const isSelected = prev.some((p) => p.id === product.id)
-      if (isSelected) {
-        return prev.filter((p) => p.id !== product.id)
-      } else {
-        return [...prev, product]
-      }
-    })
-  }
-
-  const removeProduct = (productId: string) => {
-    setSelectedProducts((prev) => prev.filter((p) => p.id !== productId))
-  }
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -241,23 +243,19 @@ export function VirtualTryOn() {
   }
 
   const handleTryOn = async () => {
-    if (!selectedImage || selectedProducts.length === 0) return
+    if (!selectedImage || !selectedProduct) return
 
     setIsProcessing(true)
     try {
-      // For multiple products, we'll combine them or process the primary one
-      const primaryProduct = selectedProducts[0]
-
       // Convert clothing image to base64
-      const clothingImageResponse = await fetch(primaryProduct.image)
+      const clothingImageResponse = await fetch(selectedProduct.image)
       const clothingImageBlob = await clothingImageResponse.blob()
 
       const formData = new FormData()
       formData.append("userImage", selectedImage)
-      formData.append("clothingImage", clothingImageBlob, `${primaryProduct.name}.jpg`)
+      formData.append("clothingImage", clothingImageBlob, `${selectedProduct.name}.jpg`)
       formData.append("prompt", prompt)
-      formData.append("productName", selectedProducts.map((p) => p.name).join(", "))
-      formData.append("clothingType", selectedProducts.map((p) => p.category).join(", "))
+      formData.append("productName", selectedProduct.name)
 
       const response = await fetch("/api/virtual-try-on", {
         method: "POST",
@@ -281,25 +279,13 @@ export function VirtualTryOn() {
     }
   }
 
-  const togglePoseSelection = (pose: string) => {
-    setSelectedPoses((prev) => {
-      const isSelected = prev.includes(pose)
-      if (isSelected) {
-        return prev.filter((p) => p !== pose)
-      } else {
-        return [...prev, pose]
-      }
-    })
-  }
-
   return (
     <section id="try-on" className="py-16 bg-muted/30">
-      <div className="container mx-auto px-4">
+      <div className="container px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold tracking-tight mb-4">VIRTUAL TRY-ON</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Upload your photo, select multiple clothes to create complete outfits, and see how they look on you using AI
-            magic! 🍌✨
+            Upload your photo, select clothes, and see how they look on you using AI magic! 🍌✨
           </p>
         </div>
 
@@ -337,122 +323,44 @@ export function VirtualTryOn() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="clothing-type">Clothing Type (Optional Override)</Label>
-                <Select value={clothingTypeOverride} onValueChange={setClothingTypeOverride}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Auto-detect from selected items" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto-detect">Auto-detect</SelectItem>
-                    {Object.entries(clothingTypes).map(([key, type]) => (
-                      <SelectItem key={key} value={key}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">Override if the AI misidentifies your clothing type</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Pose Selection</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(poseOptions).map(([key, description]) => (
-                    <div
-                      key={key}
-                      className={`flex items-center space-x-2 p-2 rounded border cursor-pointer transition-colors ${
-                        selectedPoses.includes(key)
-                          ? "border-primary bg-gray-100 text-gray-900"
-                          : "border-muted hover:border-primary/50 bg-white text-gray-700"
-                      }`}
-                      onClick={() => togglePoseSelection(key)}
-                    >
-                      <div
-                        className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
-                          selectedPoses.includes(key) ? "border-primary bg-primary" : "border-muted"
-                        }`}
-                      >
-                        {selectedPoses.includes(key) && <Check className="h-3 w-3 text-primary-foreground" />}
-                      </div>
-                      <span className="text-sm capitalize font-medium">{key}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">Select one or more poses for variety</p>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="prompt">Style Prompt</Label>
                 <Textarea
                   id="prompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="AI-generated prompt will appear here..."
+                  placeholder="Describe how you want to style the outfit..."
                   className="min-h-20"
                 />
-                <Button variant="outline" size="sm" onClick={() => setPrompt(generateSmartPrompt())} className="w-full">
-                  Generate Smart Prompt
-                </Button>
-                <p className="text-xs text-muted-foreground">Smart prompt generated automatically. Edit if needed.</p>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Select Clothing ({selectedProducts.length} selected)</CardTitle>
-              <CardDescription>Choose multiple items to create complete outfits</CardDescription>
+              <CardTitle>Select Clothing</CardTitle>
+              <CardDescription>Choose an item to try on</CardDescription>
             </CardHeader>
             <CardContent>
-              {selectedProducts.length > 0 && (
-                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm font-medium mb-2">Selected Items:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs"
-                      >
-                        <span>{product.name}</span>
-                        <button
-                          onClick={() => removeProduct(product.id)}
-                          className="hover:bg-primary/20 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto">
                 {products.map((product) => (
                   <div
                     key={product.id}
-                    className={`relative cursor-pointer border-2 rounded-lg p-3 transition-all hover:shadow-md ${
-                      selectedProducts.some((p) => p.id === product.id)
+                    className={`relative cursor-pointer border-2 rounded-lg p-2 transition-all ${
+                      selectedProduct?.id === product.id
                         ? "border-primary bg-primary/5"
                         : "border-muted hover:border-primary/50"
                     }`}
-                    onClick={() => toggleProductSelection(product)}
+                    onClick={() => setSelectedProduct(product)}
                   >
-                    <div className="flex gap-3">
-                      <img
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        className="w-20 h-20 object-cover rounded flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">${product.price}</p>
-                        <span className="text-xs text-gray-700 capitalize bg-gray-200 px-2 py-1 rounded-full inline-block mt-1 font-medium">
-                          {product.category}
-                        </span>
-                      </div>
-                    </div>
-                    {selectedProducts.some((p) => p.id === product.id) && (
-                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                    <img
+                      src={product.image || "/placeholder.svg"}
+                      alt={product.name}
+                      className="w-full h-24 object-cover rounded"
+                    />
+                    <p className="text-xs font-medium mt-1 text-center">{product.name}</p>
+                    <p className="text-xs text-muted-foreground text-center">${product.price}</p>
+                    {selectedProduct?.id === product.id && (
+                      <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
                         <Check className="h-3 w-3" />
                       </div>
                     )}
@@ -462,7 +370,7 @@ export function VirtualTryOn() {
 
               <Button
                 onClick={handleTryOn}
-                disabled={!selectedImage || selectedProducts.length === 0 || isProcessing}
+                disabled={!selectedImage || !selectedProduct || isProcessing}
                 className="w-full mt-4"
               >
                 {isProcessing ? (
@@ -473,7 +381,7 @@ export function VirtualTryOn() {
                 ) : (
                   <>
                     <Upload className="mr-2 h-4 w-4" />
-                    Try On {selectedProducts.length > 1 ? "Outfit" : "Clothes"}
+                    Try On Clothes
                   </>
                 )}
               </Button>
@@ -489,16 +397,11 @@ export function VirtualTryOn() {
             <CardContent>
               {result ? (
                 <div className="space-y-4">
-                  <div className="relative cursor-pointer" onClick={() => setIsImageExpanded(true)}>
-                    <img
-                      src={result.url || "/placeholder.svg"}
-                      alt="Virtual try-on result"
-                      className="w-full h-64 object-cover rounded-lg border hover:opacity-90 transition-opacity"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/20 rounded-lg">
-                      <div className="bg-white/90 px-3 py-1 rounded-full text-sm font-medium">Click to expand</div>
-                    </div>
-                  </div>
+                  <img
+                    src={result.url || "/placeholder.svg"}
+                    alt="Virtual try-on result"
+                    className="w-full h-64 object-cover rounded-lg border"
+                  />
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -521,11 +424,7 @@ export function VirtualTryOn() {
                   <div className="text-center">
                     <Camera className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground text-sm">
-                      {!selectedImage
-                        ? "Upload a photo"
-                        : selectedProducts.length === 0
-                          ? "Select clothing items"
-                          : "Ready to try on!"}
+                      {!selectedImage ? "Upload a photo" : !selectedProduct ? "Select clothing" : "Ready to try on!"}
                     </p>
                   </div>
                 </div>
@@ -533,47 +432,6 @@ export function VirtualTryOn() {
             </CardContent>
           </Card>
         </div>
-
-        {isImageExpanded && result && (
-          <div
-            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-            onClick={() => setIsImageExpanded(false)}
-          >
-            <div className="relative max-w-4xl max-h-full">
-              <button
-                onClick={() => setIsImageExpanded(false)}
-                className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
-              >
-                <X className="h-8 w-8" />
-              </button>
-              <img
-                src={result.url || "/placeholder.svg"}
-                alt="Virtual try-on result - expanded view"
-                className="max-w-full max-h-[90vh] object-contain rounded-lg"
-                onClick={(e) => e.stopPropagation()}
-              />
-              <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                <Button
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    const link = document.createElement("a")
-                    link.href = result.url
-                    link.download = "felipe-banana-tryout.jpg"
-                    link.click()
-                  }}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download
-                </Button>
-                <Button className="flex-1" onClick={(e) => e.stopPropagation()}>
-                  Add to Cart
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </section>
   )
