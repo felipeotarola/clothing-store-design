@@ -9,7 +9,7 @@ export default function HomePage() {
     <div className="min-h-screen">
       <Header />
       <HeroSection />
-      <main className="pr-96">
+      <main className="lg:pr-96">
         <CategorySection id="your-look" title="YOUR LOOK" category="your-look" />
         <CategorySection id="pants" title="PANTS" category="pants" />
         <CategorySection id="shirts" title="SHIRTS" category="shirts" />

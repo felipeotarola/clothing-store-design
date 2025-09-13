@@ -1,35 +1,27 @@
-# Felipe's Banana 🍌 - Virtual Fashion Try-On Store# Felipe's Banana 🍌 - Virtual Fashion Try-On Store
+# Virtual Fashion Try-On Store
 
-
-
-A fun and innovative clothing store with AI-powered virtual try-on functionality using Google's nano-banana model via Replicate. Experience the future of online shopping with minimalist design and cutting-edge AI technology!A fun and innovative clothing store with AI-powered virtual try-on functionality using the Replicate nano-banana model.
+A fun and innovative clothing store with AI-powered virtual try-on functionality using Replicate. Experience the future of online shopping with minimalist design and cutting-edge AI technology!
 
 ## Features
 
 - **Virtual Try-On**: Upload your photo and see how clothes look on you using AI
-- **Clean Grayscale Design**: Minimalist Medusa Store-inspired aesthetic
-- **Product Categories**: Pants, Shirts, Jackets, and Hats
-- **Responsive Design**: Works on all devices
+- **Clean Grayscale Design**: Minimalist design aesthetic
+- **Product Categories**: Pants, Shirts, Jackets, Hats, Jewelry, Backpacks, Sneakers & Footwear, Sportswear & Athletic Wear
+- **📱 Responsive Design**: Seamless experience across all devices
+- **🌟 Share Your Looks**: Showcase your virtual try-on results with the community
+- **⚡ Real-time Processing**: Fast AI-powered clothing visualization
 
 ## Setup
 
 ### Environment Variables
 
-  - Jewelry
+To enable the virtual try-on feature, you need to set up your Replicate API token:
 
-  - BackpacksTo enable the virtual try-on feature, you need to set up your Replicate API token:
+1. Sign up at [Replicate](https://replicate.com)
+2. Get your API token from your account settings
+3. Add it to your environment variables:
 
-  - Sneakers & Footwear
-
-  - Sportswear & Athletic Wear1. Sign up at [Replicate](https://replicate.com)
-
-- **📱 Responsive Design**: Seamless experience across all devices2. Get your API token from your account settings
-
-- **🌟 Share Your Looks**: Showcase your virtual try-on results with the community3. Add it to your environment variables:
-
-- **⚡ Real-time Processing**: Fast AI-powered clothing visualization
-
-\`\`\`bash
+```bash
 
 ## 🚀 Quick StartREPLICATE_API_TOKEN=your_token_here
 
@@ -57,7 +49,9 @@ npm install
 
    git clone https://github.com/felipeotarola/clothing-store-design.git
 
-   cd clothing-store-designVisit `http://localhost:3000` to see Felipe's Banana in action!
+   cd clothing-store-design
+
+Visit `http://localhost:3000` to see your virtual try-on store in action!
 
    ```
 
@@ -109,7 +103,7 @@ npm install
 
 5. **Open your browser**
    
-   Visit `http://localhost:3000` to see Felipe's Banana in action! 🎉
+   Visit `http://localhost:3000` to see your virtual try-on store in action! 🎉
 
 ## 🔑 Required Configuration
 
@@ -243,6 +237,10 @@ Having issues? Check these common solutions:
 
 ---
 
-**Made with 🍌 and lots of AI magic!**
+*---
 
-*Felipe's Banana - Where fashion meets the future*
+*Made with ✨ and lots of AI magic!*
+
+*Where fashion meets the future**
+
+*Where fashion meets the future*

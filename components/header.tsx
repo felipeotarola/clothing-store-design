@@ -8,7 +8,7 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <div className="flex items-center space-x-2">
-          <h1 className="text-2xl font-bold tracking-tight">FELIPE'S 🍌</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Virtual Store</h1>
         </div>
 
       </div>

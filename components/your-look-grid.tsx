@@ -1,19 +1,37 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Heart, Loader2, User, Package, Calendar, Expand } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Heart, Loader2, User, Package, Calendar, Expand, Upload, Camera, CheckCircle2 } from "lucide-react"
 import { SharedLook } from "@/lib/supabase"
+import { toast } from "sonner"
 
 interface YourLookGridProps {
   category?: string
 }
 
+const POSE_OPTIONS = [
+  { id: 'standing', label: 'Standing/Posing' },
+  { id: 'walking', label: 'Walking' },
+  { id: 'running', label: 'Running' },
+  { id: 'sitting', label: 'Sitting' },
+]
+
 export function YourLookGrid({ category }: YourLookGridProps) {
   const [sharedLooks, setSharedLooks] = useState<SharedLook[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Upload states
+  const [dragActive, setDragActive] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string>("")
+  const [selectedPoses, setSelectedPoses] = useState<string[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchSharedLooks = async () => {
     try {
@@ -51,6 +69,120 @@ export function YourLookGrid({ category }: YourLookGridProps) {
     }
   }, [category])
 
+  // Upload handlers
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0]
+      if (file.type.startsWith('image/')) {
+        handleFileSelect(file)
+      } else {
+        toast.error("Please upload an image file")
+      }
+    }
+  }, [])
+
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file)
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileSelect(e.target.files[0])
+    }
+  }
+
+  const handlePoseToggle = (poseId: string) => {
+    setSelectedPoses(prev => 
+      prev.includes(poseId) 
+        ? prev.filter(id => id !== poseId)
+        : [...prev, poseId]
+    )
+  }
+
+  const handleUpload = async () => {
+    if (!selectedFile) return
+    
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+      
+      const data = await response.json()
+      
+      // Store the uploaded image URL and poses for the virtual try-on component
+      const uploadedImageData = {
+        url: data.url,
+        file: selectedFile,
+        poses: selectedPoses,
+        timestamp: Date.now()
+      }
+      
+      // Save to sessionStorage for the virtual try-on component to use
+      sessionStorage.setItem('uploadedUserImage', JSON.stringify(uploadedImageData))
+      
+      // Dispatch custom event to notify virtual try-on component
+      window.dispatchEvent(new CustomEvent('user-image-uploaded', { 
+        detail: uploadedImageData 
+      }))
+      
+      toast.success("Image uploaded successfully! 🎉", {
+        description: `Ready for virtual try-on${selectedPoses.length > 0 ? ` with ${selectedPoses.join(', ')} poses` : ''}. Check the Virtual Try-On panel!`,
+        duration: 5000,
+      })
+      
+      // Reset form
+      setSelectedFile(null)
+      setPreviewUrl("")
+      setSelectedPoses([])
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+      
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error("Upload failed", {
+        description: "Please try again with a different image",
+        duration: 3000,
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const clearSelection = () => {
+    setSelectedFile(null)
+    setPreviewUrl("")
+    setSelectedPoses([])
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
   // Only render for "your-look" category
   if (category !== "your-look") {
     return null
@@ -69,20 +201,340 @@ export function YourLookGrid({ category }: YourLookGridProps) {
 
   if (sharedLooks.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Heart className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No shared looks yet</h3>
-          <p className="text-muted-foreground text-sm">
-            Try on some clothes and share your favorite looks to see them here!
-          </p>
+      <div className="space-y-8">
+        {/* Upload Section */}
+        <div className="max-w-2xl mx-auto">
+          <Card className="border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 transition-colors">
+            <CardContent className="p-8">
+              <div className="text-center space-y-6">
+                <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
+                  {previewUrl ? (
+                    <img 
+                      src={previewUrl} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <User className="w-12 h-12 text-muted-foreground" />
+                  )}
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Upload Your Photo</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Drag and drop or click to upload a photo for virtual try-on
+                  </p>
+                </div>
+
+                {/* Drag and Drop Area */}
+                <div
+                  className={`relative border-2 border-dashed rounded-lg p-8 transition-all duration-200 cursor-pointer ${
+                    dragActive 
+                      ? 'border-primary bg-primary/10 scale-[1.02] shadow-lg' 
+                      : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30'
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileInputChange}
+                    className="hidden"
+                  />
+                  
+                  <div className="text-center space-y-4">
+                    <div className={`mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center transition-all duration-200 ${
+                      dragActive ? 'bg-primary/20 scale-110' : ''
+                    }`}>
+                      <Upload className={`w-8 h-8 text-muted-foreground transition-all duration-200 ${
+                        dragActive ? 'text-primary scale-110' : ''
+                      }`} />
+                    </div>
+                    
+                    {selectedFile ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          <p className="font-medium text-primary">
+                            {selectedFile.name}
+                          </p>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className={`text-lg font-medium transition-colors duration-200 ${
+                          dragActive ? 'text-primary' : ''
+                        }`}>
+                          {dragActive ? "Drop your image here" : "Choose your photo"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Drag and drop or click to browse
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Supports JPG, PNG, GIF up to 10MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Animated border for drag state */}
+                  {dragActive && (
+                    <div className="absolute inset-0 border-2 border-primary rounded-lg animate-pulse pointer-events-none" />
+                  )}
+                </div>
+
+                {/* Pose Selection */}
+                {selectedFile && (
+                  <div className="space-y-4">
+                    <div className="text-left">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        Select your pose (optional)
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                          {selectedPoses.length} selected
+                        </span>
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        {POSE_OPTIONS.map((pose) => (
+                          <div key={pose.id} className={`flex items-center space-x-2 p-2 rounded-lg border transition-all duration-200 cursor-pointer ${
+                            selectedPoses.includes(pose.id) 
+                              ? 'border-primary bg-primary/5 shadow-sm' 
+                              : 'border-muted hover:border-muted-foreground/50 hover:bg-muted/50'
+                          }`} onClick={() => handlePoseToggle(pose.id)}>
+                            <Checkbox
+                              id={pose.id}
+                              checked={selectedPoses.includes(pose.id)}
+                              onCheckedChange={() => handlePoseToggle(pose.id)}
+                            />
+                            <Label
+                              htmlFor={pose.id}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {pose.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={clearSelection}
+                        className="flex-1 hover:bg-muted"
+                        disabled={isUploading}
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        onClick={handleUpload}
+                        className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md"
+                        disabled={isUploading}
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="mr-2 h-4 w-4" />
+                            Upload & Try On
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Empty State */}
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Heart className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No shared looks yet</h3>
+            <p className="text-muted-foreground text-sm">
+              Upload a photo and try on some clothes to see your looks here!
+            </p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-8">
+      {/* Upload Section */}
+      <div className="max-w-2xl mx-auto">
+        <Card className="border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 transition-colors">
+          <CardContent className="p-6">
+            <div className="text-center space-y-4">
+              <div className="flex items-center justify-center gap-4">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                  {previewUrl ? (
+                    <img 
+                      src={previewUrl} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <User className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+                
+                <div className="text-left">
+                  <h3 className="font-semibold">Upload New Photo</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Try on more clothes with a new photo
+                  </p>
+                </div>
+              </div>
+
+              {/* Compact Drag and Drop Area */}
+              <div
+                className={`relative border-2 border-dashed rounded-lg p-4 transition-all duration-200 cursor-pointer ${
+                  dragActive 
+                    ? 'border-primary bg-primary/10 scale-[1.01] shadow-md' 
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/20'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileInputChange}
+                  className="hidden"
+                />
+                
+                <div className="flex items-center justify-center gap-4">
+                  <div className={`transition-all duration-200 ${
+                    dragActive ? 'scale-110' : ''
+                  }`}>
+                    <Upload className={`w-6 h-6 text-muted-foreground transition-colors duration-200 ${
+                      dragActive ? 'text-primary' : ''
+                    }`} />
+                  </div>
+                  
+                  {selectedFile ? (
+                    <div className="text-left flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-primary text-sm">
+                          {selectedFile.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-left">
+                      <p className={`font-medium text-sm transition-colors duration-200 ${
+                        dragActive ? 'text-primary' : ''
+                      }`}>
+                        {dragActive ? "Drop image here" : "Click or drag to upload"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        JPG, PNG, GIF up to 10MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Animated border for drag state */}
+                {dragActive && (
+                  <div className="absolute inset-0 border-2 border-primary rounded-lg animate-pulse pointer-events-none" />
+                )}
+              </div>
+
+              {/* Compact Pose Selection */}
+              {selectedFile && (
+                <div className="space-y-3">
+                  <div className="text-left">
+                    <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                      Select poses (optional)
+                      {selectedPoses.length > 0 && (
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                          {selectedPoses.length}
+                        </span>
+                      )}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {POSE_OPTIONS.map((pose) => (
+                        <div key={pose.id} className={`flex items-center space-x-2 p-1.5 rounded-md border transition-all duration-200 cursor-pointer ${
+                          selectedPoses.includes(pose.id) 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-muted hover:border-muted-foreground/50 hover:bg-muted/50'
+                        }`} onClick={() => handlePoseToggle(pose.id)}>
+                          <Checkbox
+                            id={pose.id}
+                            checked={selectedPoses.includes(pose.id)}
+                            onCheckedChange={() => handlePoseToggle(pose.id)}
+                          />
+                          <Label
+                            htmlFor={pose.id}
+                            className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {pose.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearSelection}
+                      className="flex-1 hover:bg-muted"
+                      disabled={isUploading}
+                    >
+                      Clear
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleUpload}
+                      className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                      disabled={isUploading}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="mr-2 h-3 w-3" />
+                          Upload & Try On
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Existing Looks Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {sharedLooks.map((look) => (
         <Card key={look.id} className="group cursor-pointer border-0 shadow-none">
           <CardContent className="p-0">
@@ -264,6 +716,7 @@ export function YourLookGrid({ category }: YourLookGridProps) {
           </CardContent>
         </Card>
       ))}
+      </div>
     </div>
   )
 }

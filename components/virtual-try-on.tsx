@@ -2,13 +2,14 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, Camera, Loader2, Download, Expand, Share2 } from "lucide-react"
+import { Upload, Camera, Loader2, Download, Expand, Share2, User, CheckCircle2, ChevronDown } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -31,6 +32,13 @@ interface TryOnResult {
   url: string
   prompt: string
 }
+
+const POSE_OPTIONS = [
+  { id: 'standing', label: 'Standing/Posing' },
+  { id: 'walking', label: 'Walking' },
+  { id: 'running', label: 'Running' },
+  { id: 'sitting', label: 'Sitting' },
+]
 
 let globalSelectedProducts: Product[] = []
 let globalSetSelectedProducts: ((products: Product[]) => void) | null = null
@@ -70,12 +78,26 @@ export function VirtualTryOn() {
   const [isSharing, setIsSharing] = useState(false)
   const [showShareConfirm, setShowShareConfirm] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
+  const [selectedPoses, setSelectedPoses] = useState<string[]>([])
+  const [dragActive, setDragActive] = useState(false)
+  const [isStylePromptCollapsed, setIsStylePromptCollapsed] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const [prompt, setPrompt] = useState(
     "Make the person wear the selected clothing items. Make the scene natural and well-lit.",
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   globalSetSelectedProducts = setSelectedProducts
+
+  // Update prompt when poses change
+  useEffect(() => {
+    if (selectedPoses.length > 0) {
+      const poseText = selectedPoses.join(', ')
+      setPrompt(`Make the person wear the selected clothing items while ${poseText}. Make the scene natural and well-lit.`)
+    } else {
+      setPrompt("Make the person wear the selected clothing items. Make the scene natural and well-lit.")
+    }
+  }, [selectedPoses])
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -84,6 +106,46 @@ export function VirtualTryOn() {
       const url = URL.createObjectURL(file)
       setPreviewUrl(url)
     }
+  }
+
+  // Drag and drop handlers
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0]
+      if (file.type.startsWith('image/')) {
+        handleFileSelect(file)
+      } else {
+        toast.error("Please upload an image file")
+      }
+    }
+  }, [])
+
+  const handleFileSelect = (file: File) => {
+    setSelectedImage(file)
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+  }
+
+  const handlePoseToggle = (poseId: string) => {
+    setSelectedPoses(prev => 
+      prev.includes(poseId) 
+        ? prev.filter(id => id !== poseId)
+        : [...prev, poseId]
+    )
   }
 
   const handleShareClick = () => {
@@ -222,15 +284,44 @@ export function VirtualTryOn() {
   }
 
   return (
-    <div
-      className="fixed right-0 w-96 bg-background border-l border-border z-50 overflow-y-auto"
-      style={{ top: "4rem", height: "calc(100vh - 4rem)" }}
-    >
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Mobile Toggle Button */}
+      <div className="lg:hidden fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={() => setIsOpen(!isOpen)}
+          size="lg"
+          className="rounded-full w-16 h-16 shadow-lg"
+        >
+          <Camera className="h-6 w-6" />
+        </Button>
+        {selectedProducts.length > 0 && (
+          <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+            {selectedProducts.length}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Sidebar / Mobile Overlay */}
+      <div
+        className={`fixed right-0 bg-background border-l border-border z-40 overflow-y-auto transition-transform duration-300 ease-in-out
+          lg:translate-x-0 lg:w-96
+          ${isOpen ? 'translate-x-0 w-full max-w-md' : 'translate-x-full w-full max-w-md'}
+        `}
+        style={{ top: "4rem", height: "calc(100vh - 4rem)" }}
+      >
       <div className="p-6 space-y-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight mb-2">VIRTUAL TRY-ON</h2>
           <p className="text-muted-foreground text-sm">
-            Upload your photo and select clothes to see how they look on you! 🍌✨
+            Upload your photo and select clothes to see how they look on you! ✨
           </p>
         </div>
 
@@ -244,41 +335,156 @@ export function VirtualTryOn() {
             <CardDescription className="text-xs">Choose a clear photo of yourself</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="image-upload" className="text-sm">
-                Select Image
-              </Label>
-              <Input
-                id="image-upload"
+            {/* Avatar Preview */}
+            <div className="flex justify-center">
+              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center border-2 border-dashed border-muted-foreground/25">
+                {previewUrl ? (
+                  <img 
+                    src={previewUrl} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <User className="w-10 h-10 text-muted-foreground" />
+                )}
+              </div>
+            </div>
+
+            {/* Drag and Drop Area */}
+            <div
+              className={`relative border-2 border-dashed rounded-lg p-4 transition-all duration-200 cursor-pointer ${
+                dragActive 
+                  ? 'border-primary bg-primary/10 scale-[1.01] shadow-md' 
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/20'
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleImageSelect}
-                ref={fileInputRef}
-                className="cursor-pointer text-xs"
+                className="hidden"
               />
+              
+              <div className="text-center space-y-2">
+                <div className={`transition-all duration-200 ${
+                  dragActive ? 'scale-110' : ''
+                }`}>
+                  <Upload className={`w-6 h-6 mx-auto text-muted-foreground transition-colors duration-200 ${
+                    dragActive ? 'text-primary' : ''
+                  }`} />
+                </div>
+                
+                {selectedImage ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      <p className="font-medium text-primary text-sm">
+                        {selectedImage.name}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {(selectedImage.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className={`text-sm font-medium transition-colors duration-200 ${
+                      dragActive ? 'text-primary' : ''
+                    }`}>
+                      {dragActive ? "Drop image here" : "Click or drag to upload"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      JPG, PNG, GIF up to 10MB
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Animated border for drag state */}
+              {dragActive && (
+                <div className="absolute inset-0 border-2 border-primary rounded-lg animate-pulse pointer-events-none" />
+              )}
             </div>
 
-            {previewUrl && (
-              <div className="relative">
-                <img
-                  src={previewUrl || "/placeholder.svg"}
-                  alt="Preview"
-                  className="w-full h-32 object-cover rounded-lg border"
-                />
+            {/* Pose Selection */}
+            {selectedImage && (
+              <div className="space-y-3">
+                <div className="text-left">
+                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                    Select poses (optional)
+                    {selectedPoses.length > 0 && (
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                        {selectedPoses.length}
+                      </span>
+                    )}
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {POSE_OPTIONS.map((pose) => (
+                      <div key={pose.id} className={`flex items-center space-x-2 p-1.5 rounded-md border transition-all duration-200 cursor-pointer ${
+                        selectedPoses.includes(pose.id) 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-muted hover:border-muted-foreground/50 hover:bg-muted/50'
+                      }`} onClick={() => handlePoseToggle(pose.id)}>
+                        <Checkbox
+                          id={pose.id}
+                          checked={selectedPoses.includes(pose.id)}
+                          onCheckedChange={() => handlePoseToggle(pose.id)}
+                        />
+                        <Label
+                          htmlFor={pose.id}
+                          className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {pose.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="prompt" className="text-sm">
-                Style Prompt
-              </Label>
-              <Textarea
-                id="prompt"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe how you want to style the outfit..."
-                className="min-h-16 text-xs"
-              />
+              <div 
+                className="flex items-center justify-between cursor-pointer p-2 rounded-md hover:bg-muted/50 transition-colors duration-200"
+                onClick={() => setIsStylePromptCollapsed(!isStylePromptCollapsed)}
+              >
+                <Label htmlFor="prompt" className="text-sm font-medium cursor-pointer">
+                  Style Prompt
+                </Label>
+                <div className="flex items-center gap-1">
+                  {!isStylePromptCollapsed && (
+                    <span className="text-xs text-muted-foreground">Click to collapse</span>
+                  )}
+                  <ChevronDown 
+                    className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${
+                      isStylePromptCollapsed ? '-rotate-90' : 'rotate-0'
+                    }`}
+                  />
+                </div>
+              </div>
+              
+              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                isStylePromptCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
+              }`}>
+                <div className="space-y-2 pt-1">
+                  <Textarea
+                    id="prompt"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Describe how you want to style the outfit..."
+                    className="min-h-16 text-xs transition-all duration-200"
+                  />
+                  <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-md">
+                    💡 <strong>Tip:</strong> Be specific about styling, poses, lighting, and mood for better results
+                  </p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -538,6 +744,7 @@ export function VirtualTryOn() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   )
 }

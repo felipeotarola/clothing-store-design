@@ -9,8 +9,8 @@ import { Toaster } from "sonner"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Felipe's Banana - Virtual Fashion Try-On",
-  description: "Try on clothes virtually with AI at Felipe's Banana - the funniest fashion store online!",
+  title: "Virtual Fashion Try-On",
+  description: "Try on clothes virtually with Nano Banana- the funniest fashion store online!",
   generator: "v0.app",
 }
 
