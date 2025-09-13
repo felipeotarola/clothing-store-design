@@ -33,6 +33,11 @@ const clothingTypes = {
     pose: "athletic stance appropriate for the sport",
     placement: "full body or specific body part",
   },
+  shoes: {
+    label: "Shoes/Footwear",
+    pose: "standing with feet visible and slightly apart",
+    placement: "on feet",
+  },
 }
 
 const products: Product[] = [
@@ -133,6 +138,27 @@ const products: Product[] = [
     price: 69,
     category: "sports",
     image: "/compression-shirt-athletic.jpg",
+  },
+  {
+    id: "15",
+    name: "Classic Oxford Shoes",
+    price: 299,
+    category: "shoes",
+    image: "/classic-oxford-shoes-leather.jpg",
+  },
+  {
+    id: "16",
+    name: "White Sneakers",
+    price: 159,
+    category: "shoes",
+    image: "/white-sneakers-minimalist.jpg",
+  },
+  {
+    id: "17",
+    name: "Running Shoes",
+    price: 189,
+    category: "shoes",
+    image: "/running-shoes-athletic.jpg",
   },
 ]
 

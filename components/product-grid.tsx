@@ -108,6 +108,27 @@ const products: Product[] = [
     category: "sports",
     image: "/compression-shirt-athletic.jpg",
   },
+  {
+    id: "15",
+    name: "Classic Oxford Shoes",
+    price: 299,
+    category: "shoes",
+    image: "/classic-oxford-shoes-leather.jpg",
+  },
+  {
+    id: "16",
+    name: "White Sneakers",
+    price: 159,
+    category: "shoes",
+    image: "/white-sneakers-minimalist.jpg",
+  },
+  {
+    id: "17",
+    name: "Running Shoes",
+    price: 189,
+    category: "shoes",
+    image: "/running-shoes-athletic.jpg",
+  },
 ]
 
 interface ProductGridProps {
