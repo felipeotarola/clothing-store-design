@@ -224,6 +224,55 @@ const products: Product[] = [
     category: "backpacks",
     image: "/leather-backpack-minimalist-grayscale.jpg",
   },
+  {
+    id: "31",
+    name: "Minimalist Slip Dress",
+    price: 189,
+    category: "dresses",
+    image: "/minimalist-fashion-model-in-grayscale-wearing-eleg.jpg",
+  },
+  {
+    id: "32",
+    name: "Midi Wrap Dress",
+    price: 229,
+    category: "dresses",
+    image: "/minimalist-fashion-model-in-grayscale-wearing-eleg.jpg",
+  },
+  {
+    id: "33",
+    name: "A-Line Mini Dress",
+    price: 159,
+    category: "dresses",
+    image: "/minimalist-fashion-model-in-grayscale-wearing-eleg.jpg",
+  },
+  {
+    id: "34",
+    name: "Maxi Shirt Dress",
+    price: 249,
+    category: "dresses",
+    image: "/minimalist-fashion-model-in-grayscale-wearing-eleg.jpg",
+  },
+  {
+    id: "35",
+    name: "Emma Stone Casual Look",
+    price: 349,
+    category: "celebrity-looks",
+    image: "/minimalist-fashion-model-in-grayscale-wearing-eleg.jpg",
+  },
+  {
+    id: "36",
+    name: "Zendaya Street Style",
+    price: 399,
+    category: "celebrity-looks",
+    image: "/stylish-male-model-in-modern-casual-wear--black-an.jpg",
+  },
+  {
+    id: "37",
+    name: "Ryan Gosling Classic",
+    price: 429,
+    category: "celebrity-looks",
+    image: "/stylish-male-model-in-modern-casual-wear--black-an.jpg",
+  },
 ]
 
 interface ProductGridProps {

@@ -20,6 +20,8 @@ export default function HomePage() {
         <CategorySection id="backpacks" title="BACKPACKS" category="backpacks" />
         <CategorySection id="sneakers" title="SNEAKERS" category="sneakers" />
         <CategorySection id="sportswear" title="SPORTSWEAR" category="sportswear" />
+        <CategorySection id="dresses" title="DRESSES" category="dresses" />
+        <CategorySection id="celebrity-looks" title="CELEBRITY LOOKS" category="celebrity-looks" />
       </main>
       <Footer />
       <VirtualTryOn />
