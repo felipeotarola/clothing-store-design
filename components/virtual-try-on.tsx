@@ -9,6 +9,7 @@ import { Upload, Camera, Loader2, Download, Expand, Share2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -90,11 +91,31 @@ export function VirtualTryOn() {
   }
 
   const handleConfirmShare = async () => {
-    if (!result) return
+    if (!result || !selectedImage) return
 
     setIsSharing(true)
     setShowShareConfirm(false)
     try {
+      // First, upload the user's original image to Vercel Blob
+      let userImageUrl = null
+      if (selectedImage) {
+        const userImageFormData = new FormData()
+        userImageFormData.append("file", selectedImage)
+        
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: userImageFormData,
+        })
+        
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          userImageUrl = uploadData.url
+        } else {
+          console.warn("Failed to upload user image, proceeding without it")
+        }
+      }
+
+      // Then save the shared look with the permanent user image URL
       const response = await fetch("/api/shared-looks", {
         method: "POST",
         headers: {
@@ -102,7 +123,7 @@ export function VirtualTryOn() {
         },
         body: JSON.stringify({
           image_url: result.url,
-          user_image_url: previewUrl, // Include the original user image
+          user_image_url: userImageUrl, // Use the permanent blob URL
           prompt: result.prompt,
           product_names: selectedProducts.map(p => p.name).join(", "),
           selected_items: selectedProducts, // Include the full product data
@@ -114,13 +135,19 @@ export function VirtualTryOn() {
       }
 
       const data = await response.json()
-      alert("Look shared successfully! 🎉")
+      toast.success("Look shared successfully! 🎉", {
+        description: "Your virtual try-on look is now visible in the 'Your Look' section for everyone to see!",
+        duration: 5000,
+      })
       
       // Trigger a refresh of the "Your Look" section
       window.dispatchEvent(new CustomEvent('shared-look-updated'))
     } catch (error) {
       console.error("Error sharing look:", error)
-      alert("Failed to share look. Please try again.")
+      toast.error("Failed to share look", {
+        description: "There was an error uploading your images. Please try again.",
+        duration: 5000,
+      })
     } finally {
       setIsSharing(false)
     }
@@ -134,6 +161,13 @@ export function VirtualTryOn() {
     if (!selectedImage || selectedProducts.length === 0) return
 
     setIsProcessing(true)
+    
+    // Show processing toast
+    toast.info("Generating your virtual try-on...", {
+      description: `Processing ${selectedProducts.length} item${selectedProducts.length > 1 ? 's' : ''} with AI magic ✨`,
+      duration: 3000,
+    })
+    
     try {
       // Convert all clothing images to base64
       const clothingImages = await Promise.all(
@@ -170,9 +204,18 @@ export function VirtualTryOn() {
         url: data.output,
         prompt: prompt,
       })
+      
+      // Show success toast
+      toast.success("Virtual try-on completed! 🎉", {
+        description: `Successfully generated your look with ${selectedProducts.map(p => p.name).join(", ")}`,
+        duration: 5000,
+      })
     } catch (error) {
       console.error("Error processing image:", error)
-      alert("Failed to process image. Please try again.")
+      toast.error("Failed to process image", {
+        description: "Please try again with a different photo or clothing selection.",
+        duration: 5000,
+      })
     } finally {
       setIsProcessing(false)
     }
@@ -319,21 +362,24 @@ export function VirtualTryOn() {
             {result ? (
               <div className="space-y-3">
                 <div className="relative">
-                  <img
-                    src={result.url || "/placeholder.svg"}
-                    alt="Virtual try-on result"
-                    className="w-full h-40 object-cover rounded-lg border"
-                  />
                   {/* Expand Icon */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="absolute top-2 right-2 bg-white/80 hover:bg-white text-black"
-                      >
-                        <Expand className="h-3 w-3" />
-                      </Button>
+                      <div className="cursor-pointer relative">
+                        <img
+                          src={result.url || "/placeholder.svg"}
+                          alt="Virtual try-on result"
+                          className="w-full h-40 object-cover rounded-lg border hover:opacity-90 transition-opacity"
+                        />
+                        {/* Expand button - always visible */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="absolute top-2 right-2 bg-white/90 hover:bg-white text-black"
+                        >
+                          <Expand className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl w-full">
                       <DialogHeader>
@@ -408,7 +454,7 @@ export function VirtualTryOn() {
           <DialogHeader>
             <DialogTitle>Share Your Look?</DialogTitle>
             <DialogDescription>
-              Your look will be shared publicly in the "Your Look" section for everyone to see and get inspired by.
+              Your look will be shared publicly in the "Your Look" section for everyone to see and get inspired by. Your images will be securely uploaded and stored.
             </DialogDescription>
           </DialogHeader>
           
@@ -483,7 +529,7 @@ export function VirtualTryOn() {
               {isSharing ? (
                 <>
                   <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  Sharing...
+                  Uploading & Sharing...
                 </>
               ) : (
                 "Yes, Share"

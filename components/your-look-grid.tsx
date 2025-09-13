@@ -87,21 +87,32 @@ export function YourLookGrid({ category }: YourLookGridProps) {
         <Card key={look.id} className="group cursor-pointer border-0 shadow-none">
           <CardContent className="p-0">
             <div className="relative aspect-[3/4] overflow-hidden bg-muted">
-              <img
-                src={look.image_url || "/placeholder.svg"}
-                alt={`Shared look with ${look.product_names}`}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              {/* Expand button overlay */}
+              {/* Expand button overlay - always visible */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 hover:bg-black/40 border-0 text-white"
-                  >
-                    <Expand className="h-4 w-4" />
-                  </Button>
+                  <div className="cursor-pointer h-full w-full relative">
+                    <img
+                      src={look.image_url || "/placeholder.svg"}
+                      alt={`Shared look with ${look.product_names}`}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    {/* Expand button - always visible */}
+                    <div className="absolute top-2 right-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="bg-black/30 hover:bg-black/50 border-0 text-white backdrop-blur-sm"
+                      >
+                        <Expand className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {/* Hover overlay hint */}
+                    <div className="absolute inset-0 bg-black/0 hover:bg-black/5 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="bg-black/60 text-white px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm">
+                        Click to expand
+                      </div>
+                    </div>
+                  </div>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl h-[90vh] overflow-y-auto">
                   <DialogHeader>
