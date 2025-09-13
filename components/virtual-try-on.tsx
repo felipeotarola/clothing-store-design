@@ -5,10 +5,18 @@ import type React from "react"
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, Camera, Loader2, Download } from "lucide-react"
+import { Upload, Camera, Loader2, Download, Expand, Share2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 interface Product {
   id: string
@@ -58,6 +66,7 @@ export function VirtualTryOn() {
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [selectedProducts, setSelectedProducts] = useState<Product[]>(globalSelectedProducts)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isSharing, setIsSharing] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
   const [prompt, setPrompt] = useState(
     "Make the person wear the selected clothing items. Make the scene natural and well-lit.",
@@ -72,6 +81,40 @@ export function VirtualTryOn() {
       setSelectedImage(file)
       const url = URL.createObjectURL(file)
       setPreviewUrl(url)
+    }
+  }
+
+  const handleShareLook = async () => {
+    if (!result) return
+
+    setIsSharing(true)
+    try {
+      const response = await fetch("/api/shared-looks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image_url: result.url,
+          prompt: result.prompt,
+          product_names: selectedProducts.map(p => p.name).join(", "),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to share look")
+      }
+
+      const data = await response.json()
+      alert("Look shared successfully! 🎉")
+      
+      // Trigger a refresh of the "Your Look" section
+      window.dispatchEvent(new CustomEvent('shared-look-updated'))
+    } catch (error) {
+      console.error("Error sharing look:", error)
+      alert("Failed to share look. Please try again.")
+    } finally {
+      setIsSharing(false)
     }
   }
 
@@ -263,11 +306,40 @@ export function VirtualTryOn() {
           <CardContent>
             {result ? (
               <div className="space-y-3">
-                <img
-                  src={result.url || "/placeholder.svg"}
-                  alt="Virtual try-on result"
-                  className="w-full h-40 object-cover rounded-lg border"
-                />
+                <div className="relative">
+                  <img
+                    src={result.url || "/placeholder.svg"}
+                    alt="Virtual try-on result"
+                    className="w-full h-40 object-cover rounded-lg border"
+                  />
+                  {/* Expand Icon */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute top-2 right-2 bg-white/80 hover:bg-white text-black"
+                      >
+                        <Expand className="h-3 w-3" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl w-full">
+                      <DialogHeader>
+                        <DialogTitle>Your Virtual Try-On Result</DialogTitle>
+                        <DialogDescription>
+                          Items: {selectedProducts.map(p => p.name).join(", ")}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex justify-center">
+                        <img
+                          src={result.url || "/placeholder.svg"}
+                          alt="Virtual try-on result expanded"
+                          className="max-w-full max-h-96 object-contain rounded-lg"
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -283,7 +355,25 @@ export function VirtualTryOn() {
                     <Download className="mr-1 h-3 w-3" />
                     Download
                   </Button>
-
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={handleShareLook}
+                    disabled={isSharing}
+                  >
+                    {isSharing ? (
+                      <>
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        Sharing...
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="mr-1 h-3 w-3" />
+                        Share Look
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             ) : (

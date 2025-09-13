@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toggleGlobalSelectedProduct, isProductSelected } from "./virtual-try-on"
+import { YourLookGrid } from "./your-look-grid"
 
 interface Product {
   id: string
@@ -216,6 +217,11 @@ interface ProductGridProps {
 }
 
 export function ProductGrid({ category }: ProductGridProps) {
+  // Handle "your-look" category separately
+  if (category === "your-look") {
+    return <YourLookGrid category={category} />
+  }
+
   const filteredProducts = category ? products.filter((product) => product.category === category) : products
 
   const handleProductSelect = (product: Product) => {
@@ -246,13 +252,6 @@ export function ProductGrid({ category }: ProductGridProps) {
                   onClick={() => handleProductSelect(product)}
                 >
                   {isProductSelected(product.id) ? "REMOVE" : "TRY ON"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
-                >
-                  ADD TO CART
                 </Button>
               </div>
             </div>

@@ -10,6 +10,7 @@ export default function HomePage() {
       <Header />
       <HeroSection />
       <main className="pr-96">
+        <CategorySection id="your-look" title="YOUR LOOK" category="your-look" />
         <CategorySection id="pants" title="PANTS" category="pants" />
         <CategorySection id="shirts" title="SHIRTS" category="shirts" />
         <CategorySection id="jackets" title="JACKETS" category="jackets" />
