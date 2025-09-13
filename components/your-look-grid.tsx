@@ -393,6 +393,23 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                       alt={`Shared look with ${look.product_names}`}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
+                    {/* Input image thumbnail indicator */}
+                    {look.user_image_url && (
+                      <div className="absolute top-2 left-2">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-lg bg-white/90 backdrop-blur-sm">
+                          <img
+                            src={look.user_image_url}
+                            alt="Original input"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                          <div className="absolute bottom-0 left-0 right-0 text-center">
+                            <span className="text-white text-[8px] font-bold drop-shadow-sm">INPUT</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Expand button - always visible */}
                     <div className="absolute top-2 right-2">
                       <Button
