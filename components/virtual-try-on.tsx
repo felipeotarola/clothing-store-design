@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, Camera, Loader2, Download, Expand, Share2, User, CheckCircle2, ChevronDown } from "lucide-react"
+import { Upload, Camera, Loader2, Download, Expand, Share2, User, CheckCircle2, ChevronDown, Package, Calendar } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -730,19 +730,151 @@ export function VirtualTryOn() {
 
       {/* Result Expanded Dialog */}
       <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
-        <DialogContent className="max-w-4xl w-full">
+        <DialogContent className="max-w-4xl h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Your Virtual Try-On Result</DialogTitle>
-            <DialogDescription>
-              Items: {selectedProducts.map(p => p.name).join(", ")}
-            </DialogDescription>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Your Virtual Try-On Result
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex justify-center">
-            <img
-              src={result?.url || "/placeholder.svg"}
-              alt="Virtual try-on result expanded"
-              className="max-w-full max-h-96 object-contain rounded-lg"
-            />
+          
+          {result && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Original User Image */}
+              {previewUrl && (
+                <div className="space-y-3">
+                  <h3 className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide">
+                    <User className="h-4 w-4" />
+                    Your Original Photo
+                  </h3>
+                  <div className="aspect-[3/4] overflow-hidden rounded-lg bg-muted">
+                    <img
+                      src={previewUrl}
+                      alt="Your original photo"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Result Image */}
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide">
+                  <Package className="h-4 w-4" />
+                  Virtual Try-On Result
+                </h3>
+                <div className="aspect-[3/4] overflow-hidden rounded-lg bg-muted">
+                  <img
+                    src={result.url}
+                    alt="Virtual try-on result"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Selected Items */}
+          {selectedProducts.length > 0 && (
+            <div className="space-y-3 mt-6">
+              <h3 className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide">
+                <Package className="h-4 w-4" />
+                Selected Items ({selectedProducts.length})
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {selectedProducts.map((item, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="aspect-square overflow-hidden rounded-lg bg-muted">
+                      <img
+                        src={item.image || "/placeholder.svg"}
+                        alt={item.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <p className="font-medium line-clamp-2">{item.name}</p>
+                      <p className="text-muted-foreground">${item.price}</p>
+                      <p className="text-muted-foreground capitalize">{item.category}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Additional Info */}
+          <div className="space-y-3 mt-6 pt-6 border-t">
+            {selectedPose && (
+              <div>
+                <h4 className="font-medium text-sm mb-2">Selected Pose</h4>
+                <span className="text-sm text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                  {POSE_OPTIONS.find(p => p.id === selectedPose)?.label}
+                </span>
+              </div>
+            )}
+            
+            {prompt && (
+              <div>
+                <h4 className="font-medium text-sm mb-2">Style Prompt</h4>
+                <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">{prompt}</p>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              Generated on {new Date().toLocaleDateString()}
+            </div>
+            
+            <div className="flex gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => {
+                  if (result) {
+                    const link = document.createElement("a")
+                    link.href = result.url
+                    link.download = "virtual-try-on-result.jpg"
+                    link.click()
+                  }
+                }}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download Result
+              </Button>
+              {previewUrl && (
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    const link = document.createElement("a")
+                    link.href = previewUrl
+                    link.download = "original-photo.jpg"
+                    link.click()
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Original
+                </Button>
+              )}
+              <Button
+                variant="default"
+                className="flex-1"
+                onClick={handleShareClick}
+                disabled={isSharing}
+              >
+                {isSharing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sharing...
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share Look
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
