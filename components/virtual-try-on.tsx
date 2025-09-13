@@ -77,13 +77,14 @@ export function VirtualTryOn() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
   const [showShareConfirm, setShowShareConfirm] = useState(false)
+  const [showResultDialog, setShowResultDialog] = useState(false)
   const [result, setResult] = useState<TryOnResult | null>(null)
   const [selectedPose, setSelectedPose] = useState<string>("")
   const [dragActive, setDragActive] = useState(false)
   const [isStylePromptCollapsed, setIsStylePromptCollapsed] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [prompt, setPrompt] = useState(
-    "Keep my face and body exactly the same. Only change my clothing to match the selected items. Make it look natural and realistic.",
+    "Keep the person's face and body identity the same. Replace only their clothing with the selected items. Ensure the result looks natural, photorealistic, and well-lit, with consistent proportions and background integration. Do not alter facial features, hairstyle, or body type — only adjust clothing as specified.",
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -92,9 +93,9 @@ export function VirtualTryOn() {
   // Update prompt when pose changes
   useEffect(() => {
     if (selectedPose) {
-      setPrompt(`Keep my face and body exactly the same. Only change my clothing to match the selected items while ${selectedPose}. Make it look natural and realistic with proper lighting.`)
+      setPrompt(`Keep the person's face and body identity the same. Replace only their clothing with the selected items. Match the pose chosen (${selectedPose}). Ensure the result looks natural, photorealistic, and well-lit, with consistent proportions and background integration. Do not alter facial features, hairstyle, or body type — only adjust clothing and posture as specified.`)
     } else {
-      setPrompt("Keep my face and body exactly the same. Only change my clothing to match the selected items. Make it look natural and realistic.")
+      setPrompt("Keep the person's face and body identity the same. Replace only their clothing with the selected items. Ensure the result looks natural, photorealistic, and well-lit, with consistent proportions and background integration. Do not alter facial features, hairstyle, or body type — only adjust clothing as specified.")
     }
   }, [selectedPose])
 
@@ -302,6 +303,9 @@ export function VirtualTryOn() {
         url: data.output,
         prompt: prompt,
       })
+      
+      // Automatically open the result dialog to show the completed image
+      setShowResultDialog(true)
       
       // Show success toast
       toast.success("Virtual try-on completed! 🎉", {
@@ -605,41 +609,25 @@ export function VirtualTryOn() {
             {result ? (
               <div className="space-y-3">
                 <div className="relative">
-                  {/* Expand Icon */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <div className="cursor-pointer relative">
-                        <img
-                          src={result.url || "/placeholder.svg"}
-                          alt="Virtual try-on result"
-                          className="w-full h-80 object-cover rounded-lg border hover:opacity-90 transition-opacity"
-                        />
-                        {/* Expand button - always visible */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="absolute top-2 right-2 bg-white/90 hover:bg-white text-black"
-                        >
-                          <Expand className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl w-full">
-                      <DialogHeader>
-                        <DialogTitle>Your Virtual Try-On Result</DialogTitle>
-                        <DialogDescription>
-                          Items: {selectedProducts.map(p => p.name).join(", ")}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="flex justify-center">
-                        <img
-                          src={result.url || "/placeholder.svg"}
-                          alt="Virtual try-on result expanded"
-                          className="max-w-full max-h-96 object-contain rounded-lg"
-                        />
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  {/* Clickable image to expand */}
+                  <div 
+                    className="cursor-pointer relative"
+                    onClick={() => setShowResultDialog(true)}
+                  >
+                    <img
+                      src={result.url || "/placeholder.svg"}
+                      alt="Virtual try-on result"
+                      className="w-full h-80 object-cover rounded-lg border hover:opacity-90 transition-opacity"
+                    />
+                    {/* Expand button - always visible */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="absolute top-2 right-2 bg-white/90 hover:bg-white text-black"
+                    >
+                      <Expand className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -739,6 +727,25 @@ export function VirtualTryOn() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Result Expanded Dialog */}
+      <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+        <DialogContent className="max-w-4xl w-full">
+          <DialogHeader>
+            <DialogTitle>Your Virtual Try-On Result</DialogTitle>
+            <DialogDescription>
+              Items: {selectedProducts.map(p => p.name).join(", ")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center">
+            <img
+              src={result?.url || "/placeholder.svg"}
+              alt="Virtual try-on result expanded"
+              className="max-w-full max-h-96 object-contain rounded-lg"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Share Confirmation Dialog */}
       <Dialog open={showShareConfirm} onOpenChange={setShowShareConfirm}>
