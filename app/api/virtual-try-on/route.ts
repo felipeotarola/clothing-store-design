@@ -120,22 +120,11 @@ export async function POST(request: NextRequest) {
     })
 
     console.log(`[API] Full input object keys: ${Object.keys(replicateInput)}`)
-    console.log(`[API] Sending to Replicate with model: google/gemini-2.5-flash-image`)
+    console.log(`[API] Sending to Replicate with model: google/nano-banana`)
 
-    let output: any
-    try {
-      output = await replicate.run("google/gemini-2.5-flash-image", {
-        input: replicateInput,
-      })
-      console.log(`[API] Replicate run completed successfully`)
-    } catch (modelError) {
-      console.error(`[API] Error with gemini model, falling back to nano-banana:`, modelError)
-      // Fallback to the original model if gemini doesn't work
-      output = await replicate.run("google/nano-banana", {
-        input: replicateInput,
-      })
-      console.log(`[API] Fallback model completed successfully`)
-    }
+    const output = await replicate.run("google/nano-banana", {
+      input: replicateInput,
+    })
 
     console.log("[API] Replicate output type:", typeof output)
     console.log("[API] Replicate output constructor:", output?.constructor?.name)
