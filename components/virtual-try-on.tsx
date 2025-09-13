@@ -172,6 +172,8 @@ const products: Product[] = [
 interface TryOnResult {
   url: string
   prompt: string
+  id: string
+  timestamp: number
 }
 
 export function VirtualTryOn() {
@@ -181,9 +183,10 @@ export function VirtualTryOn() {
   const [clothingTypeOverride, setClothingTypeOverride] = useState<string>("auto-detect")
   const [selectedPoses, setSelectedPoses] = useState<string[]>(["standing"])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [result, setResult] = useState<TryOnResult | null>(null)
+  const [results, setResults] = useState<TryOnResult[]>([])
   const [prompt, setPrompt] = useState("")
   const [isImageExpanded, setIsImageExpanded] = useState(false)
+  const [expandedImageUrl, setExpandedImageUrl] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const generateSmartPrompt = () => {
@@ -269,10 +272,13 @@ export function VirtualTryOn() {
       }
 
       const data = await response.json()
-      setResult({
+      const newResult: TryOnResult = {
         url: data.output,
         prompt: prompt,
-      })
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+      }
+      setResults((prev) => [newResult, ...prev])
     } catch (error) {
       console.error("Error processing image:", error)
       alert("Failed to process image. Please try again.")
@@ -292,6 +298,11 @@ export function VirtualTryOn() {
     })
   }
 
+  const handleImageExpand = (imageUrl: string) => {
+    setExpandedImageUrl(imageUrl)
+    setIsImageExpanded(true)
+  }
+
   return (
     <section id="try-on" className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -303,238 +314,252 @@ export function VirtualTryOn() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {/* Upload Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Upload Your Photo
-              </CardTitle>
-              <CardDescription>Choose a clear photo of yourself</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="image-upload">Select Image</Label>
-                <Input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  ref={fileInputRef}
-                  className="cursor-pointer"
-                />
-              </div>
-
-              {previewUrl && (
-                <div className="relative">
-                  <img
-                    src={previewUrl || "/placeholder.svg"}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded-lg border"
+        <div className="max-w-6xl mx-auto space-y-12">
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="h-5 w-5" />
+                  Upload Your Photo
+                </CardTitle>
+                <CardDescription>Choose a clear photo of yourself</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="image-upload">Select Image</Label>
+                  <Input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    ref={fileInputRef}
+                    className="cursor-pointer"
                   />
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="clothing-type">Clothing Type (Optional Override)</Label>
-                <Select value={clothingTypeOverride} onValueChange={setClothingTypeOverride}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Auto-detect from selected items" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto-detect">Auto-detect</SelectItem>
-                    {Object.entries(clothingTypes).map(([key, type]) => (
-                      <SelectItem key={key} value={key}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">Override if the AI misidentifies your clothing type</p>
-              </div>
+                {previewUrl && (
+                  <div className="relative">
+                    <img
+                      src={previewUrl || "/placeholder.svg"}
+                      alt="Preview"
+                      className="w-full h-64 object-cover rounded-lg border"
+                    />
+                  </div>
+                )}
 
-              <div className="space-y-2">
-                <Label>Pose Selection</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(poseOptions).map(([key, description]) => (
-                    <div
-                      key={key}
-                      className={`flex items-center space-x-2 p-2 rounded border cursor-pointer transition-colors ${
-                        selectedPoses.includes(key)
-                          ? "border-primary bg-gray-100 text-gray-900"
-                          : "border-muted hover:border-primary/50 bg-white text-gray-700"
-                      }`}
-                      onClick={() => togglePoseSelection(key)}
-                    >
-                      <div
-                        className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
-                          selectedPoses.includes(key) ? "border-primary bg-primary" : "border-muted"
-                        }`}
-                      >
-                        {selectedPoses.includes(key) && <Check className="h-3 w-3 text-primary-foreground" />}
-                      </div>
-                      <span className="text-sm capitalize font-medium">{key}</span>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  <Label htmlFor="clothing-type">Clothing Type (Optional Override)</Label>
+                  <Select value={clothingTypeOverride} onValueChange={setClothingTypeOverride}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Auto-detect from selected items" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto-detect">Auto-detect</SelectItem>
+                      {Object.entries(clothingTypes).map(([key, type]) => (
+                        <SelectItem key={key} value={key}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Override if the AI misidentifies your clothing type</p>
                 </div>
-                <p className="text-xs text-muted-foreground">Select one or more poses for variety</p>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="prompt">Style Prompt</Label>
-                <Textarea
-                  id="prompt"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="AI-generated prompt will appear here..."
-                  className="min-h-20"
-                />
-                <Button variant="outline" size="sm" onClick={() => setPrompt(generateSmartPrompt())} className="w-full">
-                  Generate Smart Prompt
-                </Button>
-                <p className="text-xs text-muted-foreground">Smart prompt generated automatically. Edit if needed.</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Clothing ({selectedProducts.length} selected)</CardTitle>
-              <CardDescription>Choose multiple items to create complete outfits</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {selectedProducts.length > 0 && (
-                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm font-medium mb-2">Selected Items:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedProducts.map((product) => (
+                <div className="space-y-2">
+                  <Label>Pose Selection</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(poseOptions).map(([key, description]) => (
                       <div
-                        key={product.id}
-                        className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs"
+                        key={key}
+                        className={`flex items-center space-x-2 p-2 rounded border cursor-pointer transition-colors ${
+                          selectedPoses.includes(key)
+                            ? "border-primary bg-gray-100 text-gray-900"
+                            : "border-muted hover:border-primary/50 bg-white text-gray-700"
+                        }`}
+                        onClick={() => togglePoseSelection(key)}
                       >
-                        <span>{product.name}</span>
-                        <button
-                          onClick={() => removeProduct(product.id)}
-                          className="hover:bg-primary/20 rounded-full p-0.5"
+                        <div
+                          className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
+                            selectedPoses.includes(key) ? "border-primary bg-primary" : "border-muted"
+                          }`}
                         >
-                          <X className="h-3 w-3" />
-                        </button>
+                          {selectedPoses.includes(key) && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </div>
+                        <span className="text-sm capitalize font-medium">{key}</span>
                       </div>
                     ))}
                   </div>
+                  <p className="text-xs text-muted-foreground">Select one or more poses for variety</p>
                 </div>
-              )}
+              </CardContent>
+            </Card>
 
-              <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle>Style Configuration</CardTitle>
+                <CardDescription>Customize your virtual try-on experience</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="prompt">Style Prompt</Label>
+                  <Textarea
+                    id="prompt"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="AI-generated prompt will appear here..."
+                    className="min-h-32"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPrompt(generateSmartPrompt())}
+                    className="w-full"
+                  >
+                    Generate Smart Prompt
+                  </Button>
+                  <p className="text-xs text-muted-foreground">Smart prompt generated automatically. Edit if needed.</p>
+                </div>
+
+                {selectedProducts.length > 0 && (
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm font-medium mb-3">Selected Items ({selectedProducts.length}):</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
+                        >
+                          <span>{product.name}</span>
+                          <button
+                            onClick={() => removeProduct(product.id)}
+                            className="hover:bg-primary/20 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleTryOn}
+                  disabled={!selectedImage || selectedProducts.length === 0 || isProcessing}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing Magic...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Try On {selectedProducts.length > 1 ? "Outfit" : "Clothes"}
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Select Clothing</CardTitle>
+              <CardDescription>Choose multiple items to create complete outfits</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {products.map((product) => (
                   <div
                     key={product.id}
-                    className={`relative cursor-pointer border-2 rounded-lg p-3 transition-all hover:shadow-md ${
+                    className={`relative cursor-pointer border-2 rounded-lg p-4 transition-all hover:shadow-md ${
                       selectedProducts.some((p) => p.id === product.id)
                         ? "border-primary bg-primary/5"
                         : "border-muted hover:border-primary/50"
                     }`}
                     onClick={() => toggleProductSelection(product)}
                   >
-                    <div className="flex gap-3">
-                      <img
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        className="w-20 h-20 object-cover rounded flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">${product.price}</p>
-                        <span className="text-xs text-gray-700 capitalize bg-gray-200 px-2 py-1 rounded-full inline-block mt-1 font-medium">
-                          {product.category}
-                        </span>
-                      </div>
+                    <img
+                      src={product.image || "/placeholder.svg"}
+                      alt={product.name}
+                      className="w-full h-32 object-cover rounded mb-3"
+                    />
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">{product.name}</p>
+                      <p className="text-sm text-muted-foreground">${product.price}</p>
+                      <span className="text-xs text-gray-700 capitalize bg-gray-200 px-2 py-1 rounded-full inline-block font-medium">
+                        {product.category}
+                      </span>
                     </div>
                     {selectedProducts.some((p) => p.id === product.id) && (
                       <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                        <Check className="h-3 w-3" />
+                        <Check className="h-4 w-4" />
                       </div>
                     )}
                   </div>
                 ))}
               </div>
-
-              <Button
-                onClick={handleTryOn}
-                disabled={!selectedImage || selectedProducts.length === 0 || isProcessing}
-                className="w-full mt-4"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing Magic...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Try On {selectedProducts.length > 1 ? "Outfit" : "Clothes"}
-                  </>
-                )}
-              </Button>
             </CardContent>
           </Card>
 
-          {/* Result Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Virtual Try-On</CardTitle>
-              <CardDescription>See how you look in Felipe's Banana fashion!</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {result ? (
-                <div className="space-y-4">
-                  <div className="relative cursor-pointer" onClick={() => setIsImageExpanded(true)}>
-                    <img
-                      src={result.url || "/placeholder.svg"}
-                      alt="Virtual try-on result"
-                      className="w-full h-64 object-cover rounded-lg border hover:opacity-90 transition-opacity"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/20 rounded-lg">
-                      <div className="bg-white/90 px-3 py-1 rounded-full text-sm font-medium">Click to expand</div>
+          {results.length > 0 && (
+            <div>
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold tracking-tight mb-2">GENERATED LOOKS</h3>
+                <p className="text-muted-foreground">Your virtual try-on results</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {results.map((result, index) => (
+                  <Card key={result.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="relative cursor-pointer" onClick={() => handleImageExpand(result.url)}>
+                      <img
+                        src={result.url || "/placeholder.svg"}
+                        alt={`Virtual try-on result ${index + 1}`}
+                        className="w-full h-64 object-cover hover:opacity-90 transition-opacity"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/20">
+                        <div className="bg-white/90 px-3 py-1 rounded-full text-sm font-medium">Click to expand</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 bg-transparent"
-                      onClick={() => {
-                        const link = document.createElement("a")
-                        link.href = result.url
-                        link.download = "felipe-banana-tryout.jpg"
-                        link.click()
-                      }}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
-                    <Button className="flex-1">Add to Cart</Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-64 border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                  <div className="text-center">
-                    <Camera className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground text-sm">
-                      {!selectedImage
-                        ? "Upload a photo"
-                        : selectedProducts.length === 0
-                          ? "Select clothing items"
-                          : "Ready to try on!"}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    <CardContent className="p-4">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1 bg-transparent"
+                          onClick={() => {
+                            const link = document.createElement("a")
+                            link.href = result.url
+                            link.download = `felipe-banana-look-${index + 1}.jpg`
+                            link.click()
+                          }}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </Button>
+                        <Button className="flex-1">Add to Cart</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {results.length === 0 && (
+            <div className="text-center py-12">
+              <Camera className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">No looks generated yet</h3>
+              <p className="text-muted-foreground">
+                Upload a photo and select clothing items to start creating your virtual looks!
+              </p>
+            </div>
+          )}
         </div>
 
-        {isImageExpanded && result && (
+        {isImageExpanded && expandedImageUrl && (
           <div
             className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
             onClick={() => setIsImageExpanded(false)}
@@ -547,7 +572,7 @@ export function VirtualTryOn() {
                 <X className="h-8 w-8" />
               </button>
               <img
-                src={result.url || "/placeholder.svg"}
+                src={expandedImageUrl || "/placeholder.svg"}
                 alt="Virtual try-on result - expanded view"
                 className="max-w-full max-h-[90vh] object-contain rounded-lg"
                 onClick={(e) => e.stopPropagation()}
@@ -559,7 +584,7 @@ export function VirtualTryOn() {
                   onClick={(e) => {
                     e.stopPropagation()
                     const link = document.createElement("a")
-                    link.href = result.url
+                    link.href = expandedImageUrl
                     link.download = "felipe-banana-tryout.jpg"
                     link.click()
                   }}
