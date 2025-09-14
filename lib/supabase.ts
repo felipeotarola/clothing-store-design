@@ -15,4 +15,5 @@ export interface SharedLook {
   selected_items?: any[]
   created_at: string
   updated_at: string
+  public: boolean
 }

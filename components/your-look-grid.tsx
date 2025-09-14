@@ -23,6 +23,8 @@ const POSE_OPTIONS = [
 
 export function YourLookGrid({ category }: YourLookGridProps) {
   const [sharedLooks, setSharedLooks] = useState<SharedLook[]>([])
+  const [localLooks, setLocalLooks] = useState<any[]>([])
+  const [allLooks, setAllLooks] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   
   // Upload states
@@ -43,29 +45,72 @@ export function YourLookGrid({ category }: YourLookGridProps) {
       }
     } catch (error) {
       console.error("Error fetching shared looks:", error)
-    } finally {
-      setIsLoading(false)
     }
+  }
+
+  const loadLocalLooks = () => {
+    try {
+      const stored = localStorage.getItem('generatedLooks')
+      const localLooksData = stored ? JSON.parse(stored) : []
+      console.log("Loading local looks from localStorage:", localLooksData)
+      setLocalLooks(localLooksData)
+    } catch (error) {
+      console.error("Error loading local looks:", error)
+      setLocalLooks([])
+    }
+  }
+
+  const combineAndSortLooks = () => {
+    // Combine shared and local looks, then sort by creation date
+    const combined = [
+      ...localLooks.map(look => ({ ...look, is_local: true })),
+      ...sharedLooks.map(look => ({ ...look, is_local: false }))
+    ]
+    
+    // Sort by creation date (newest first)
+    combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    
+    setAllLooks(combined)
+    setIsLoading(false)
   }
 
   useEffect(() => {
     // Only load if we're showing the "your-look" category
     if (category === "your-look") {
       fetchSharedLooks()
+      loadLocalLooks()
     }
   }, [category])
 
   useEffect(() => {
-    // Listen for shared look updates
+    // Combine and sort looks whenever shared or local looks change
+    if (category === "your-look") {
+      combineAndSortLooks()
+    }
+  }, [sharedLooks, localLooks, category])
+
+  useEffect(() => {
+    // Listen for shared look updates and local look generation
     const handleSharedLookUpdate = () => {
       if (category === "your-look") {
         fetchSharedLooks()
       }
     }
 
+    const handleLocalLookGenerated = () => {
+      console.log("Received local-look-generated event")
+      if (category === "your-look") {
+        console.log("Reloading local looks...")
+        loadLocalLooks()
+      }
+    }
+
     window.addEventListener('shared-look-updated', handleSharedLookUpdate)
+    window.addEventListener('local-look-generated', handleLocalLookGenerated)
+    
     return () => {
       window.removeEventListener('shared-look-updated', handleSharedLookUpdate)
+      window.removeEventListener('local-look-generated', handleLocalLookGenerated)
     }
   }, [category])
 
@@ -196,7 +241,7 @@ export function YourLookGrid({ category }: YourLookGridProps) {
     )
   }
 
-  if (sharedLooks.length === 0) {
+  if (allLooks.length === 0) {
     return (
       <div className="space-y-8">
         {/* Upload Section */}
@@ -380,7 +425,7 @@ export function YourLookGrid({ category }: YourLookGridProps) {
     <div className="space-y-8">
       {/* Existing Looks Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      {sharedLooks.map((look) => (
+      {allLooks.map((look) => (
         <Card key={look.id} className="group cursor-pointer border-0 shadow-none">
           <CardContent className="p-0">
             <div className="relative aspect-[3/4] overflow-hidden bg-muted">
@@ -409,6 +454,17 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                         </div>
                       </div>
                     )}
+                    
+                    {/* Local/Shared indicator */}
+                    <div className="absolute bottom-2 left-2">
+                      <span className={`text-white text-[8px] font-bold px-2 py-1 rounded-full backdrop-blur-sm ${
+                        look.is_local 
+                          ? 'bg-green-500/80' 
+                          : 'bg-blue-500/80'
+                      }`}>
+                        {look.is_local ? 'YOURS' : 'SHARED'}
+                      </span>
+                    </div>
                     
                     {/* Expand button - always visible */}
                     <div className="absolute top-2 right-2">
@@ -518,11 +574,22 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                       <Button 
                         variant="outline" 
                         className="flex-1"
-                        onClick={() => {
-                          const link = document.createElement("a")
-                          link.href = look.image_url
-                          link.download = `shared-look-${look.id}.jpg`
-                          link.click()
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(look.image_url)
+                            const blob = await response.blob()
+                            const url = window.URL.createObjectURL(blob)
+                            const link = document.createElement("a")
+                            link.href = url
+                            link.download = `${look.is_local ? 'your-look' : 'shared-look'}-${look.id}.jpg`
+                            document.body.appendChild(link)
+                            link.click()
+                            document.body.removeChild(link)
+                            window.URL.revokeObjectURL(url)
+                          } catch (error) {
+                            console.error('Download failed:', error)
+                            toast.error("Download failed", { description: "Please try again" })
+                          }
                         }}
                       >
                         Download Result
@@ -531,14 +598,67 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                         <Button 
                           variant="outline" 
                           className="flex-1"
-                          onClick={() => {
-                            const link = document.createElement("a")
-                            link.href = look.user_image_url!
-                            link.download = `original-photo-${look.id}.jpg`
-                            link.click()
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(look.user_image_url!)
+                              const blob = await response.blob()
+                              const url = window.URL.createObjectURL(blob)
+                              const link = document.createElement("a")
+                              link.href = url
+                              link.download = `original-photo-${look.id}.jpg`
+                              document.body.appendChild(link)
+                              link.click()
+                              document.body.removeChild(link)
+                              window.URL.revokeObjectURL(url)
+                            } catch (error) {
+                              console.error('Download failed:', error)
+                              toast.error("Download failed", { description: "Please try again" })
+                            }
                           }}
                         >
                           Download Original
+                        </Button>
+                      )}
+                      {look.is_local && (
+                        <Button 
+                          variant="default" 
+                          className="flex-1"
+                          onClick={async () => {
+                            try {
+                              // Convert local look to shared look format and upload
+                              const response = await fetch("/api/shared-looks", {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({
+                                  image_url: look.image_url,
+                                  user_image_url: look.user_image_url,
+                                  prompt: look.prompt,
+                                  product_names: look.product_names,
+                                  selected_items: look.selected_items,
+                                  public: true, // Default to public when sharing from local looks
+                                }),
+                              })
+
+                              if (!response.ok) {
+                                throw new Error("Failed to share look")
+                              }
+
+                              toast.success("Look shared successfully! 🎉", {
+                                description: "Your look is now visible to everyone in the community!",
+                                duration: 5000,
+                              })
+                              
+                              // Trigger refresh
+                              window.dispatchEvent(new CustomEvent('shared-look-updated'))
+                            } catch (error) {
+                              console.error('Share failed:', error)
+                              toast.error("Failed to share look", { description: "Please try again" })
+                            }
+                          }}
+                        >
+                          Share with Community
                         </Button>
                       )}
                     </div>

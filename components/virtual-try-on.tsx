@@ -186,6 +186,7 @@ export function VirtualTryOn() {
           prompt: result.prompt,
           product_names: selectedProducts.map(p => p.name).join(", "),
           selected_items: selectedProducts, // Include the full product data
+          public: true, // Default to public when sharing from virtual try-on
         }),
       })
 
@@ -299,18 +300,57 @@ export function VirtualTryOn() {
       const data = await response.json()
       console.log("API response received:", data)
       
-      setResult({
+      const resultData = {
         url: data.output,
         prompt: prompt,
-      })
+      }
       
-      // Automatically open the result dialog to show the completed image
-      setShowResultDialog(true)
+      setResult(resultData)
       
-      // Show success toast
+      // Save to localStorage for "Your Look" section
+      const generatedLook = {
+        id: Date.now().toString(),
+        image_url: data.output,
+        user_image_url: previewUrl,
+        prompt: prompt,
+        product_names: selectedProducts.map(p => p.name).join(", "),
+        selected_items: selectedProducts,
+        selected_pose: selectedPose,
+        created_at: new Date().toISOString(),
+        is_local: true // Flag to identify local generated looks
+      }
+      
+      console.log("Saving generated look to localStorage:", generatedLook)
+      
+      // Get existing looks from localStorage
+      const existingLooks = JSON.parse(localStorage.getItem('generatedLooks') || '[]')
+      
+      // Add new look to the beginning
+      const updatedLooks = [generatedLook, ...existingLooks]
+      
+      // Keep only the last 20 looks to prevent localStorage from getting too large
+      if (updatedLooks.length > 20) {
+        updatedLooks.splice(20)
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('generatedLooks', JSON.stringify(updatedLooks))
+      console.log("Updated localStorage with", updatedLooks.length, "looks")
+      
+      // Trigger event to refresh the "Your Look" section
+      window.dispatchEvent(new CustomEvent('local-look-generated'))
+      console.log("Dispatched local-look-generated event")
+      
+      // Navigate to Your Look section
+      const yourLookSection = document.getElementById('your-look')
+      if (yourLookSection) {
+        yourLookSection.scrollIntoView({ behavior: 'smooth' })
+      }
+      
+      // Show success toast with navigation hint
       toast.success("Virtual try-on completed! 🎉", {
-        description: `Successfully generated your look with ${selectedProducts.map(p => p.name).join(", ")}`,
-        duration: 5000,
+        description: `Your new look is now in the "Your Look" section above!`,
+        duration: 7000,
       })
     } catch (error) {
       console.error("Error processing image:", error)
