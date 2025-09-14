@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, Camera, Loader2, Download, Expand, Share2, User, CheckCircle2, ChevronDown, Package, Calendar } from "lucide-react"
+import { Upload, Camera, Loader2, Download, Expand, Share2, User, CheckCircle2, ChevronDown, Package, Calendar, Video } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -83,6 +83,8 @@ export function VirtualTryOn() {
   const [dragActive, setDragActive] = useState(false)
   const [isStylePromptCollapsed, setIsStylePromptCollapsed] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
+  const [videoResult, setVideoResult] = useState<string | null>(null)
   const [prompt, setPrompt] = useState(
     "Keep the person's face and body identity the same. Replace only their clothing with the selected items. Ensure the result looks natural, photorealistic, and well-lit, with consistent proportions and background integration. Do not alter facial features, hairstyle, or body type — only adjust clothing as specified.",
   )
@@ -155,9 +157,19 @@ export function VirtualTryOn() {
     setIsSharing(true)
     setShowShareConfirm(false)
     try {
-      // First, upload the user's original image to Vercel Blob
+      // Use the already uploaded user image URL if available, otherwise upload now
       let userImageUrl = null
-      if (selectedImage) {
+      
+      // Try to get the uploaded URL from the current result/localStorage first
+      const storedLooks = JSON.parse(localStorage.getItem('generatedLooks') || '[]')
+      const currentLook = storedLooks.find((look: any) => look.image_url === result.url)
+      
+      if (currentLook && currentLook.user_image_url && !currentLook.user_image_url.startsWith('blob:')) {
+        // Use the already uploaded URL
+        userImageUrl = currentLook.user_image_url
+        console.log("Using already uploaded user image URL:", userImageUrl)
+      } else if (selectedImage) {
+        // Upload the user image if we don't have a permanent URL yet
         const userImageFormData = new FormData()
         userImageFormData.append("file", selectedImage)
         
@@ -169,6 +181,7 @@ export function VirtualTryOn() {
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json()
           userImageUrl = uploadData.url
+          console.log("Uploaded user image for sharing:", userImageUrl)
         } else {
           console.warn("Failed to upload user image, proceeding without it")
         }
@@ -186,6 +199,7 @@ export function VirtualTryOn() {
           prompt: result.prompt,
           product_names: selectedProducts.map(p => p.name).join(", "),
           selected_items: selectedProducts, // Include the full product data
+          video_url: videoResult, // Include video URL if available
           public: true, // Default to public when sharing from virtual try-on
         }),
       })
@@ -217,6 +231,75 @@ export function VirtualTryOn() {
     setShowShareConfirm(false)
   }
 
+  const handleCreateVideo = async () => {
+    if (!result) return
+
+    setIsGeneratingVideo(true)
+    
+    // Show processing toast
+    toast.info("Creating video with VEO-3 Fast...", {
+      description: "Generating a moving fashion showcase of your virtual try-on ✨",
+      duration: 5000,
+    })
+
+    try {
+      console.log("Starting video generation with image:", result.url)
+
+      // Create enhanced video prompt
+      const videoPrompt = `A fashion model showcasing the ${selectedProducts.map(p => p.name).join(", ")} with natural, elegant movements. The model should move gracefully, turning slightly to show the clothing from different angles, with subtle body movements that highlight the fit and style of the garments. Natural lighting, professional fashion photography style.`
+
+      const response = await fetch("/api/video-generation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image_url: result.url,
+          prompt: videoPrompt,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.details || "Failed to generate video")
+      }
+
+      const data = await response.json()
+      console.log("Video generation completed:", data)
+      
+      setVideoResult(data.video_url)
+      
+      // Update localStorage with video
+      const stored = localStorage.getItem('generatedLooks')
+      const existingLooks = stored ? JSON.parse(stored) : []
+      
+      // Find and update the current look with video
+      const updatedLooks = existingLooks.map((look: any) => {
+        if (look.image_url === result.url) {
+          return { ...look, video_url: data.video_url, video_prompt: videoPrompt }
+        }
+        return look
+      })
+      
+      localStorage.setItem('generatedLooks', JSON.stringify(updatedLooks))
+      window.dispatchEvent(new CustomEvent('local-look-generated'))
+      
+      // Show success toast
+      toast.success("Video created successfully! 🎬", {
+        description: "Your fashion video is ready! Check the result below.",
+        duration: 7000,
+      })
+    } catch (error) {
+      console.error("Error generating video:", error)
+      toast.error("Failed to create video", {
+        description: error instanceof Error ? error.message : "Please try again later.",
+        duration: 5000,
+      })
+    } finally {
+      setIsGeneratingVideo(false)
+    }
+  }
+
   const handleTryOn = async () => {
     if (!selectedImage || selectedProducts.length === 0) return
 
@@ -243,6 +326,28 @@ export function VirtualTryOn() {
         selectedItemsCount: selectedProducts.length,
         itemNames: selectedProducts.map(p => p.name)
       })
+
+      // First, upload the user image to Vercel Blob to get a permanent URL
+      let uploadedUserImageUrl = previewUrl // fallback to local blob URL
+      try {
+        const userImageFormData = new FormData()
+        userImageFormData.append("file", selectedImage)
+        
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: userImageFormData,
+        })
+        
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          uploadedUserImageUrl = uploadData.url
+          console.log("User image uploaded to:", uploadedUserImageUrl)
+        } else {
+          console.warn("Failed to upload user image to blob storage, using local URL")
+        }
+      } catch (uploadError) {
+        console.warn("Error uploading user image:", uploadError)
+      }
 
       // Convert all clothing images to blobs with error handling
       const clothingImages = await Promise.all(
@@ -311,7 +416,7 @@ export function VirtualTryOn() {
       const generatedLook = {
         id: Date.now().toString(),
         image_url: data.output,
-        user_image_url: previewUrl,
+        user_image_url: uploadedUserImageUrl, // Use the uploaded URL instead of local blob
         prompt: prompt,
         product_names: selectedProducts.map(p => p.name).join(", "),
         selected_items: selectedProducts,
@@ -669,6 +774,24 @@ export function VirtualTryOn() {
                     </Button>
                   </div>
                 </div>
+                
+                {/* Video Section */}
+                {videoResult && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Fashion Video</h4>
+                    <div className="relative">
+                      <video
+                        src={videoResult}
+                        controls
+                        className="w-full h-80 object-contain rounded-lg border bg-muted"
+                        poster={result.url}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -696,6 +819,25 @@ export function VirtualTryOn() {
                   >
                     <Download className="mr-1 h-3 w-3" />
                     Download
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={handleCreateVideo}
+                    disabled={isGeneratingVideo || !result}
+                  >
+                    {isGeneratingVideo ? (
+                      <>
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Video className="mr-1 h-3 w-3" />
+                        Create Video
+                      </>
+                    )}
                   </Button>
                   <Button
                     variant="default"
@@ -857,6 +999,23 @@ export function VirtualTryOn() {
           
           {/* Additional Info */}
           <div className="space-y-3 mt-6 pt-6 border-t">
+            {/* Video Section in Dialog */}
+            {videoResult && (
+              <div>
+                <h4 className="font-medium text-sm mb-2">Fashion Video</h4>
+                <div className="aspect-[9/16] overflow-hidden rounded-lg bg-muted max-h-96">
+                  <video
+                    src={videoResult}
+                    controls
+                    className="w-full h-full object-contain"
+                    poster={result?.url}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            )}
+            
             {selectedPose && (
               <div>
                 <h4 className="font-medium text-sm mb-2">Selected Pose</h4>
@@ -929,6 +1088,32 @@ export function VirtualTryOn() {
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Download Original
+                </Button>
+              )}
+              {videoResult && (
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(videoResult)
+                      const blob = await response.blob()
+                      const url = window.URL.createObjectURL(blob)
+                      const link = document.createElement("a")
+                      link.href = url
+                      link.download = "fashion-video.mp4"
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                      window.URL.revokeObjectURL(url)
+                    } catch (error) {
+                      console.error('Video download failed:', error)
+                      toast.error("Video download failed", { description: "Please try again" })
+                    }
+                  }}
+                >
+                  <Video className="mr-2 h-4 w-4" />
+                  Download Video
                 </Button>
               )}
               <Button

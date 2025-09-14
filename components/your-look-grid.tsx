@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Heart, Loader2, User, Package, Calendar, Expand, Upload, Camera, CheckCircle2 } from "lucide-react"
+import { Heart, Loader2, User, Package, Calendar, Expand, Upload, Camera, CheckCircle2, Video } from "lucide-react"
 import { SharedLook } from "@/lib/supabase"
 import { toast } from "sonner"
 
@@ -33,6 +33,7 @@ export function YourLookGrid({ category }: YourLookGridProps) {
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [selectedPose, setSelectedPose] = useState<string>("")
   const [isUploading, setIsUploading] = useState(false)
+  const [generatingVideoFor, setGeneratingVideoFor] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchSharedLooks = async () => {
@@ -222,6 +223,78 @@ export function YourLookGrid({ category }: YourLookGridProps) {
     setSelectedPose("")
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
+    }
+  }
+
+  const handleGenerateVideo = async (look: any) => {
+    setGeneratingVideoFor(look.id)
+    
+    toast.info("Creating video with VEO-3 Fast...", {
+      description: "Generating a moving fashion showcase ✨",
+      duration: 5000,
+    })
+
+    try {
+      console.log("Starting video generation for look:", look.id)
+
+      // Create enhanced video prompt
+      const videoPrompt = `A fashion model showcasing the ${look.product_names} with natural, elegant movements. The model should move gracefully, turning slightly to show the clothing from different angles, with subtle body movements that highlight the fit and style of the garments. Natural lighting, professional fashion photography style.`
+
+      const response = await fetch("/api/video-generation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image_url: look.image_url,
+          prompt: videoPrompt,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.details || "Failed to generate video")
+      }
+
+      const data = await response.json()
+      console.log("Video generation completed:", data)
+      
+      // Update the look with video data
+      if (look.is_local) {
+        // Update localStorage for local looks
+        const stored = localStorage.getItem('generatedLooks')
+        const existingLooks = stored ? JSON.parse(stored) : []
+        
+        const updatedLooks = existingLooks.map((localLook: any) => {
+          if (localLook.id === look.id) {
+            return { ...localLook, video_url: data.video_url, video_prompt: videoPrompt }
+          }
+          return localLook
+        })
+        
+        localStorage.setItem('generatedLooks', JSON.stringify(updatedLooks))
+        loadLocalLooks() // Refresh local looks
+      } else {
+        // For shared looks, we could update the database, but for now just show the video
+        // You might want to add a video_url field to the shared_looks table
+        toast.success("Video created! Note: Video not saved for shared looks yet.", {
+          description: "This feature will be enhanced to save videos for shared looks.",
+          duration: 5000,
+        })
+      }
+      
+      toast.success("Video created successfully! 🎬", {
+        description: "Your fashion video is ready!",
+        duration: 7000,
+      })
+    } catch (error) {
+      console.error("Error generating video:", error)
+      toast.error("Failed to create video", {
+        description: error instanceof Error ? error.message : "Please try again later.",
+        duration: 5000,
+      })
+    } finally {
+      setGeneratingVideoFor(null)
     }
   }
 
@@ -455,6 +528,16 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                       </div>
                     )}
                     
+                    {/* Video indicator */}
+                    {look.video_url && (
+                      <div className="absolute top-2 left-16">
+                        <div className="bg-purple-500/80 text-white text-[8px] font-bold px-2 py-1 rounded-full backdrop-blur-sm flex items-center gap-1">
+                          <Video className="h-2 w-2" />
+                          VIDEO
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Local/Shared indicator */}
                     <div className="absolute bottom-2 left-2">
                       <span className={`text-white text-[8px] font-bold px-2 py-1 rounded-full backdrop-blur-sm ${
@@ -525,6 +608,26 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Video Section */}
+                  {look.video_url && (
+                    <div className="space-y-3 mt-6">
+                      <h3 className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide">
+                        <Video className="h-4 w-4" />
+                        Fashion Video
+                      </h3>
+                      <div className="aspect-[9/16] overflow-hidden rounded-lg bg-muted max-h-96">
+                        <video
+                          src={look.video_url}
+                          controls
+                          className="w-full h-full object-contain"
+                          poster={look.image_url}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Selected Items */}
                   <div className="space-y-3 mt-6">
@@ -619,6 +722,50 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                           Download Original
                         </Button>
                       )}
+                      {look.video_url && (
+                        <Button 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(look.video_url)
+                              const blob = await response.blob()
+                              const url = window.URL.createObjectURL(blob)
+                              const link = document.createElement("a")
+                              link.href = url
+                              link.download = `fashion-video-${look.id}.mp4`
+                              document.body.appendChild(link)
+                              link.click()
+                              document.body.removeChild(link)
+                              window.URL.revokeObjectURL(url)
+                            } catch (error) {
+                              console.error('Video download failed:', error)
+                              toast.error("Video download failed", { description: "Please try again" })
+                            }
+                          }}
+                        >
+                          <Video className="mr-2 h-4 w-4" />
+                          Download Video
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => handleGenerateVideo(look)}
+                        disabled={generatingVideoFor === look.id}
+                      >
+                        {generatingVideoFor === look.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <Video className="mr-2 h-4 w-4" />
+                            {look.video_url ? 'Regenerate Video' : 'Create Video'}
+                          </>
+                        )}
+                      </Button>
                       {look.is_local && (
                         <Button 
                           variant="default" 
@@ -637,6 +784,7 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                                   prompt: look.prompt,
                                   product_names: look.product_names,
                                   selected_items: look.selected_items,
+                                  video_url: look.video_url, // Include video URL if available
                                   public: true, // Default to public when sharing from local looks
                                 }),
                               })

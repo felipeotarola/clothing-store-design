@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { image_url, user_image_url, prompt, product_names, selected_items, public: isPublic = true } = body
+    const { image_url, user_image_url, prompt, product_names, selected_items, video_url, public: isPublic = true } = body
 
     if (!image_url || !product_names) {
       return NextResponse.json({ error: "Image URL and product names are required" }, { status: 400 })
@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
           prompt: prompt || "",
           product_names,
           selected_items,
+          video_url: video_url || null,
           public: isPublic,
         }
       ])

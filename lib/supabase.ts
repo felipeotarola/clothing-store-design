@@ -16,4 +16,5 @@ export interface SharedLook {
   created_at: string
   updated_at: string
   public: boolean
+  video_url?: string
 }
