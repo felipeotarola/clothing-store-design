@@ -31,6 +31,7 @@ interface Product {
 interface TryOnResult {
   url: string
   prompt: string
+  database_id?: string
 }
 
 const POSE_OPTIONS = [
@@ -157,58 +158,80 @@ export function VirtualTryOn() {
     setIsSharing(true)
     setShowShareConfirm(false)
     try {
-      // Use the already uploaded user image URL if available, otherwise upload now
-      let userImageUrl = null
-      
-      // Try to get the uploaded URL from the current result/localStorage first
-      const storedLooks = JSON.parse(localStorage.getItem('generatedLooks') || '[]')
-      const currentLook = storedLooks.find((look: any) => look.image_url === result.url)
-      
-      if (currentLook && currentLook.user_image_url && !currentLook.user_image_url.startsWith('blob:')) {
-        // Use the already uploaded URL
-        userImageUrl = currentLook.user_image_url
-        console.log("Using already uploaded user image URL:", userImageUrl)
-      } else if (selectedImage) {
-        // Upload the user image if we don't have a permanent URL yet
-        const userImageFormData = new FormData()
-        userImageFormData.append("file", selectedImage)
-        
-        const uploadResponse = await fetch("/api/upload", {
-          method: "POST",
-          body: userImageFormData,
+      // If we have a database ID, update the existing record to make it public
+      if (result.database_id) {
+        console.log("Updating existing database record to public...")
+        const updateResponse = await fetch(`/api/shared-looks/${result.database_id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            public: true, // Make the existing record public
+          }),
         })
+
+        if (!updateResponse.ok) {
+          throw new Error("Failed to update look to public")
+        }
+
+        const updateData = await updateResponse.json()
+        console.log("Successfully made look public:", updateData.data.id)
+      } else {
+        // Fallback: Create new record if we don't have a database ID
+        console.log("No database ID found, creating new shared look...")
         
-        if (uploadResponse.ok) {
-          const uploadData = await uploadResponse.json()
-          userImageUrl = uploadData.url
-          console.log("Uploaded user image for sharing:", userImageUrl)
-        } else {
-          console.warn("Failed to upload user image, proceeding without it")
+        // Use the already uploaded user image URL if available, otherwise upload now
+        let userImageUrl = null
+        
+        // Try to get the uploaded URL from the current result/localStorage first
+        const storedLooks = JSON.parse(localStorage.getItem('generatedLooks') || '[]')
+        const currentLook = storedLooks.find((look: any) => look.image_url === result.url)
+        
+        if (currentLook && currentLook.user_image_url && !currentLook.user_image_url.startsWith('blob:')) {
+          // Use the already uploaded URL
+          userImageUrl = currentLook.user_image_url
+          console.log("Using already uploaded user image URL:", userImageUrl)
+        } else if (selectedImage) {
+          // Upload the user image if we don't have a permanent URL yet
+          const userImageFormData = new FormData()
+          userImageFormData.append("file", selectedImage)
+          
+          const uploadResponse = await fetch("/api/upload", {
+            method: "POST",
+            body: userImageFormData,
+          })
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json()
+            userImageUrl = uploadData.url
+            console.log("Uploaded user image for sharing:", userImageUrl)
+          } else {
+            console.warn("Failed to upload user image, proceeding without it")
+          }
+        }
+
+        // Create new shared look
+        const response = await fetch("/api/shared-looks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            image_url: result.url,
+            user_image_url: userImageUrl,
+            prompt: result.prompt,
+            product_names: selectedProducts.map(p => p.name).join(", "),
+            selected_items: selectedProducts,
+            video_url: videoResult, // Include video URL if available
+            public: true, // This is a new public share
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to share look")
         }
       }
-
-      // Then save the shared look with the permanent user image URL
-      const response = await fetch("/api/shared-looks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          image_url: result.url,
-          user_image_url: userImageUrl, // Use the permanent blob URL
-          prompt: result.prompt,
-          product_names: selectedProducts.map(p => p.name).join(", "),
-          selected_items: selectedProducts, // Include the full product data
-          video_url: videoResult, // Include video URL if available
-          public: true, // Default to public when sharing from virtual try-on
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to share look")
-      }
-
-      const data = await response.json()
       toast.success("Look shared successfully! 🎉", {
         description: "Your virtual try-on look is now visible in the 'Your Look' section for everyone to see!",
         duration: 5000,
@@ -268,6 +291,30 @@ export function VirtualTryOn() {
       console.log("Video generation completed:", data)
       
       setVideoResult(data.video_url)
+      
+      // Update database record with video URL if we have a database_id
+      if (result.database_id) {
+        try {
+          console.log("Updating database record with video URL...")
+          const updateResponse = await fetch(`/api/shared-looks/${result.database_id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              video_url: data.video_url,
+            }),
+          })
+          
+          if (updateResponse.ok) {
+            console.log("Database record updated with video URL")
+          } else {
+            console.warn("Failed to update database record with video URL")
+          }
+        } catch (dbError) {
+          console.error("Error updating database with video:", dbError)
+        }
+      }
       
       // Update localStorage with video
       const stored = localStorage.getItem('generatedLooks')
@@ -405,14 +452,47 @@ export function VirtualTryOn() {
       const data = await response.json()
       console.log("API response received:", data)
       
-      const resultData = {
+      const resultData: TryOnResult = {
         url: data.output,
         prompt: prompt,
       }
       
       setResult(resultData)
       
-      // Save to localStorage for "Your Look" section
+      // Automatically save to database with public=false by default
+      try {
+        console.log("Auto-saving generated look to database...")
+        const autoSaveResponse = await fetch("/api/shared-looks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            image_url: data.output,
+            user_image_url: uploadedUserImageUrl,
+            prompt: prompt,
+            product_names: selectedProducts.map(p => p.name).join(", "),
+            selected_items: selectedProducts,
+            public: false, // Save as private by default
+          }),
+        })
+
+        if (autoSaveResponse.ok) {
+          const autoSaveData = await autoSaveResponse.json()
+          console.log("Auto-saved to database with ID:", autoSaveData.data.id)
+          
+          // Store the database ID for later use in sharing/video generation
+          resultData.database_id = autoSaveData.data.id
+          setResult(resultData)
+        } else {
+          console.warn("Failed to auto-save to database, will continue with localStorage")
+        }
+      } catch (autoSaveError) {
+        console.error("Error auto-saving to database:", autoSaveError)
+        console.log("Continuing with localStorage fallback")
+      }
+
+      // Keep localStorage as backup/cache
       const generatedLook = {
         id: Date.now().toString(),
         image_url: data.output,
