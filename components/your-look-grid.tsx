@@ -567,20 +567,20 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                     </div>
                   </div>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto mx-4 my-2 sm:mx-auto sm:my-8">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <Package className="h-5 w-5" />
+                    <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                       Shared Look Details
                     </DialogTitle>
                   </DialogHeader>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                     {/* Original User Image */}
                     {look.user_image_url && (
-                      <div className="space-y-3">
-                        <h3 className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide">
-                          <User className="h-4 w-4" />
+                      <div className="space-y-2 sm:space-y-3">
+                        <h3 className="flex items-center gap-2 font-semibold text-xs sm:text-sm uppercase tracking-wide">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4" />
                           Original Photo
                         </h3>
                         <div className="aspect-[3/4] overflow-hidden rounded-lg bg-muted">
@@ -594,9 +594,9 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                     )}
                     
                     {/* Result Image */}
-                    <div className="space-y-3">
-                      <h3 className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide">
-                        <Package className="h-4 w-4" />
+                    <div className="space-y-2 sm:space-y-3">
+                      <h3 className="flex items-center gap-2 font-semibold text-xs sm:text-sm uppercase tracking-wide">
+                        <Package className="h-3 w-3 sm:h-4 sm:w-4" />
                         Virtual Try-On Result
                       </h3>
                       <div className="aspect-[3/4] overflow-hidden rounded-lg bg-muted">
@@ -611,12 +611,12 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                   
                   {/* Video Section */}
                   {look.video_url && (
-                    <div className="space-y-3 mt-6">
-                      <h3 className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide">
-                        <Video className="h-4 w-4" />
+                    <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6">
+                      <h3 className="flex items-center gap-2 font-semibold text-xs sm:text-sm uppercase tracking-wide">
+                        <Video className="h-3 w-3 sm:h-4 sm:w-4" />
                         Fashion Video
                       </h3>
-                      <div className="aspect-[9/16] overflow-hidden rounded-lg bg-muted max-h-96">
+                      <div className="aspect-[9/16] overflow-hidden rounded-lg bg-muted max-h-64 sm:max-h-96">
                         <video
                           src={look.video_url}
                           controls
@@ -630,15 +630,15 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                   )}
                   
                   {/* Selected Items */}
-                  <div className="space-y-3 mt-6">
-                    <h3 className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide">
-                      <Package className="h-4 w-4" />
+                  <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6">
+                    <h3 className="flex items-center gap-2 font-semibold text-xs sm:text-sm uppercase tracking-wide">
+                      <Package className="h-3 w-3 sm:h-4 sm:w-4" />
                       Selected Items
                     </h3>
                     {look.selected_items && look.selected_items.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
                         {look.selected_items.map((item: any, index: number) => (
-                          <div key={index} className="space-y-2">
+                          <div key={index} className="space-y-1 sm:space-y-2">
                             <div className="aspect-square overflow-hidden rounded-lg bg-muted">
                               <img
                                 src={item.image || "/placeholder.svg"}
@@ -646,36 +646,37 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                                 className="h-full w-full object-cover"
                               />
                             </div>
-                            <div className="text-xs space-y-1">
-                              <p className="font-medium line-clamp-2">{item.name}</p>
-                              <p className="text-muted-foreground">${item.price}</p>
+                            <div className="text-xs space-y-0.5 sm:space-y-1">
+                              <p className="font-medium line-clamp-2 text-[10px] sm:text-xs">{item.name}</p>
+                              <p className="text-muted-foreground text-[10px] sm:text-xs">${item.price}</p>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {look.product_names}
                       </p>
                     )}
                   </div>
                   
                   {/* Additional Info */}
-                  <div className="space-y-3 mt-6 pt-6 border-t">
+                  <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t">
                     {look.prompt && (
                       <div>
-                        <h4 className="font-medium text-sm mb-2">Styling Notes</h4>
-                        <p className="text-sm text-muted-foreground">{look.prompt}</p>
+                        <h4 className="font-medium text-xs sm:text-sm mb-1 sm:mb-2">Styling Notes</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{look.prompt}</p>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                       Shared on {new Date(look.created_at).toLocaleDateString()}
                     </div>
                     
-                    <div className="flex gap-2 pt-4">
+                    <div className="flex flex-col sm:flex-row gap-2 pt-2 sm:pt-4">
                       <Button 
                         variant="outline" 
+                        size="sm"
                         className="flex-1"
                         onClick={async () => {
                           try {
@@ -695,11 +696,12 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                           }
                         }}
                       >
-                        Download Result
+                        <span className="text-xs sm:text-sm">Download Result</span>
                       </Button>
                       {look.user_image_url && (
                         <Button 
                           variant="outline" 
+                          size="sm"
                           className="flex-1"
                           onClick={async () => {
                             try {
@@ -719,12 +721,13 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                             }
                           }}
                         >
-                          Download Original
+                          <span className="text-xs sm:text-sm">Download Original</span>
                         </Button>
                       )}
                       {look.video_url && (
                         <Button 
                           variant="outline" 
+                          size="sm"
                           className="flex-1"
                           onClick={async () => {
                             try {
@@ -744,31 +747,33 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                             }
                           }}
                         >
-                          <Video className="mr-2 h-4 w-4" />
-                          Download Video
+                          <Video className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="text-xs sm:text-sm">Download Video</span>
                         </Button>
                       )}
                       <Button 
                         variant="outline" 
+                        size="sm"
                         className="flex-1"
                         onClick={() => handleGenerateVideo(look)}
                         disabled={generatingVideoFor === look.id}
                       >
                         {generatingVideoFor === look.id ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating...
+                            <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                            <span className="text-xs sm:text-sm">Creating...</span>
                           </>
                         ) : (
                           <>
-                            <Video className="mr-2 h-4 w-4" />
-                            {look.video_url ? 'Regenerate Video' : 'Create Video'}
+                            <Video className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="text-xs sm:text-sm">{look.video_url ? 'Regenerate Video' : 'Create Video'}</span>
                           </>
                         )}
                       </Button>
                       {look.is_local && (
                         <Button 
                           variant="default" 
+                          size="sm"
                           className="flex-1"
                           onClick={async () => {
                             try {
@@ -806,7 +811,7 @@ export function YourLookGrid({ category }: YourLookGridProps) {
                             }
                           }}
                         >
-                          Share with Community
+                          <span className="text-xs sm:text-sm">Share with Community</span>
                         </Button>
                       )}
                     </div>
