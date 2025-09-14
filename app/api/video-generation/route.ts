@@ -40,19 +40,36 @@ export async function POST(request: NextRequest) {
     console.log("Prediction type:", typeof prediction)
     console.log("Prediction constructor:", prediction?.constructor?.name)
 
-    // Handle the prediction result - VEO-3 returns the video URL directly as a string
+    // Handle the prediction result - VEO-3 returns FileOutput objects
     let videoUrl: string
     
     if (typeof prediction === 'string') {
       // Direct URL
       videoUrl = prediction
     } else if (Array.isArray(prediction) && prediction.length > 0) {
-      // Array of URLs, take the first one
-      videoUrl = prediction[0]
+      // Array of URLs or FileOutput objects
+      const firstItem = prediction[0]
+      if (typeof firstItem === 'string') {
+        videoUrl = firstItem
+      } else if (firstItem && typeof firstItem.url === 'function') {
+        videoUrl = firstItem.url()
+      } else if (firstItem && typeof firstItem.url === 'string') {
+        videoUrl = firstItem.url
+      } else {
+        throw new Error(`Unexpected array item format: ${JSON.stringify(firstItem)}`)
+      }
     } else if (prediction && typeof prediction === 'object') {
-      // Object with URL property or similar
+      // FileOutput object or similar
       const predObj = prediction as any
-      if (predObj.url) {
+      
+      if (typeof predObj.url === 'function') {
+        // FileOutput object with url() method
+        const urlResult = predObj.url()
+        videoUrl = urlResult.toString() // Convert URL object to string
+        console.log("Called url() method, result:", urlResult)
+        console.log("Converted to string:", videoUrl)
+      } else if (typeof predObj.url === 'string') {
+        // Object with url property
         videoUrl = predObj.url
       } else if (predObj.output) {
         videoUrl = predObj.output
